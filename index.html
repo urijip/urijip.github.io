@@ -67,6 +67,9 @@ button{font:inherit;color:inherit;cursor:pointer}
 .tick{position:absolute;bottom:4px;font-size:12px;font-weight:700;transform:translateX(-50%);white-space:nowrap;opacity:.9}
 .tick::before{content:'';position:absolute;left:50%;top:-12px;width:2px;height:8px;background:rgba(255,255,255,.7)}
 .pin{position:absolute;top:6px;transform:translateX(-50%);display:grid;justify-items:center;transition:left .6s}
+.fimg{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
+.ava,.pin i{overflow:hidden}
+.track .me .fimg{width:30px;height:30px;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.25)}
 .pin i{width:40px;height:40px;border-radius:50%;background:#fff;display:grid;place-items:center;font-style:normal;font-size:23px;border:3px solid var(--c);box-shadow:0 3px 0 rgba(0,0,0,.15)}
 .pin small{font-size:11px;font-weight:700;background:rgba(43,27,45,.55);padding:0 7px;border-radius:8px;margin-top:2px;white-space:nowrap}
 .pin.late i{border-color:var(--late);animation:pulse 1.4s infinite}
@@ -82,6 +85,21 @@ button{font:inherit;color:inherit;cursor:pointer}
 .badge{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:var(--late);color:#fff;font-size:12px;margin-left:4px}
 
 main{max-width:1100px;margin:0 auto;padding:4px max(4vw,16px) 90px}
+main[data-v=month]{max-width:1440px}
+main[data-v=month] .md{min-height:118px}
+main[data-v=month] .md .c{font-size:13px}
+body.pc main,body.pc .toprow,body.pc .top .rail{max-width:1440px}
+@media(min-width:1000px){
+ body.pc .homegrid{display:grid;grid-template-columns:minmax(0,2.1fr) minmax(300px,1fr);gap:24px;align-items:start}
+ body.pc .homegrid>.side{order:2;position:sticky;top:76px}
+ body.pc .homegrid>.mainc{order:1}
+ body.pc .homegrid .sum{grid-template-columns:1fr}
+ body.pc .etaT{font-size:22px}
+ body.pc .who .st{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ body.pc .homegrid .mainc>h2:first-child{margin-top:14px}
+ body.pc .grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+ body.pc .rts{grid-template-columns:repeat(auto-fit,minmax(360px,1fr))}
+}
 h2{font-family:Jua,sans-serif;font-weight:400;font-size:24px;line-height:1.2;margin:26px 0 10px}
 .card{background:var(--card);border-radius:22px;padding:16px 18px;box-shadow:0 2px 0 var(--line)}
 .dim{color:var(--mute)}
@@ -113,7 +131,7 @@ h2{font-family:Jua,sans-serif;font-weight:400;font-size:24px;line-height:1.2;mar
 .who .st{display:block;color:var(--mute);font-size:15px}
 .note{display:inline-block;margin-top:4px;background:var(--soft);border-radius:10px;padding:2px 10px;font-size:14px}
 .etaw{grid-column:2}
-.etaT{font-family:Jua,sans-serif;font-size:26px;line-height:1.2;color:var(--teal)}
+.etaT{font-family:Jua,sans-serif;font-size:26px;line-height:1.2;color:var(--teal);white-space:nowrap}
 .late .etaT,.late .left{color:var(--late)}
 .track{position:relative;height:10px;border-radius:9px;background:var(--soft);margin:14px 32px 8px 0}
 .track b{position:absolute;inset:0 auto 0 0;background:var(--teal);border-radius:9px}
@@ -140,7 +158,7 @@ h2{font-family:Jua,sans-serif;font-weight:400;font-size:24px;line-height:1.2;mar
 .tlh,.tlr{display:grid;grid-template-columns:58px minmax(0,1fr);gap:8px;align-items:center}
 .tlr{height:40px}
 .tlh .hrs{position:relative;height:20px}
-.hrs span{position:absolute;transform:translateX(-50%);font-size:12px;color:var(--mute)}
+.hrs span{position:absolute;transform:translateX(-50%);font-size:12px;color:var(--mute);white-space:nowrap}
 .tlr .nm{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tlbar{position:relative;height:30px;background:var(--soft);border-radius:10px;overflow:hidden}
 .blk{position:absolute;top:3px;bottom:3px;border-radius:8px;background:color-mix(in srgb,var(--c) 55%,var(--card));font-size:12px;font-weight:700;padding:0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:24px}
@@ -316,7 +334,7 @@ const diffDays=(a,b)=>Math.round((parseD(b)-parseD(a))/864e5);
 
 const CATS=[['school','🏫','학교·유치원'],['academy','🎒','학원'],['show','🎭','공연·발표회'],['sports','🏃','운동'],['bday','🎂','생일'],['anniv','💍','기념일'],['trip','✈️','여행'],['hospital','🏥','병원'],['meet','🎉','모임'],['meal','🍽️','식사'],['work','💼','일'],['etc','📌','기타']];
 const catOf=k=>CATS.find(c=>c[0]===k)||CATS[CATS.length-1];
-const PRESETS=[['🏠','집에 있어요',1],['🏢','일하는 중'],['🚌','집에 오는 중'],['🚗','데리러 가는 중'],['👫','같이 오는 중'],['🛒','장 보는 중'],['🏫','학교에 있어요'],['🎒','학원에 있어요'],['⚽','운동하는 중'],['🍳','밥 하는 중'],['☕','약속 중'],['🏥','병원 가는 중'],['😴','자는 중',1]];
+const PRESETS=[['🏠','집에 있어요',1],['🏢','일하는 중'],['🚌','집에 오는 중'],['🚗','데리러 가는 중'],['👫','같이 오는 중'],['🛒','장 보는 중'],['🏫','학교에 있어요'],['🎒','학원에 있어요'],['⚽','운동하는 중'],['🍳','밥 하는 중'],['☕','약속 중'],['📚','도서관에 있어요'],['🏥','병원 가는 중'],['😴','자는 중',1]];
 const KIDMSG=[['🏠','집에 왔어요'],['🏃','빨리 와 주세요'],['🍙','배고파요'],['✏️','숙제 다 했어요'],['🚿','다 씻었어요'],['🎮','놀아도 돼요?'],['🤗','보고 싶어요'],['💛','사랑해요'],['🙋','도와주세요'],['📞','전화해 주세요'],['🤕','몸이 아파요'],['😴','졸려요']];
 const PARENTMSG=[['👍','잘했어!'],['🏃','곧 갈게'],['📞','이따 전화할게'],['🍪','간식 먹고 기다려'],['⏰','조금 늦어'],['💛','사랑해']];
 const KEY='urijip-dochak-v1',PKEY='urijip-dochak-prefs';
@@ -373,6 +391,8 @@ let S=loadLocal()||emptyState('우리집',[]);
 SECS.forEach(k=>S[k]=norm(k,S[k]));
 
 const members=()=>S.config.members;
+const okPhoto=u=>typeof u==='string'&&/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(u)&&u.length<120000;
+const face=m=>m&&okPhoto(m.photo)?`<img class="fimg" src="${m.photo}" alt="">`:esc(m?m.emoji:'❔');
 const mById=id=>members().find(m=>m.id===id);
 const kids=()=>members().filter(m=>m.kid);
 const parents=()=>members().filter(m=>!m.kid);
@@ -551,7 +571,7 @@ function railHTML(){
  for(const m of members()){const i=etaInfo(S.status[m.id]);if(i.eta&&i.left<=span)pins.push({m,i,pos:i.late?0:i.left/span*100})}
  pins.sort((a,b)=>a.pos-b.pos);
  const groups=[];for(const p of pins){const g=groups[groups.length-1];if(g&&p.pos-g[0].pos<12)g.push(p);else groups.push([p])}
- const ph=groups.map(g=>{const late=g.some(p=>p.i.late),f=g[0];return `<span class="pin ${late?'late':''}" style="left:${f.pos}%;--c:${esc(f.m.color)}" title="${esc(g.map(p=>p.m.name+' '+koS(p.i.eta)).join(', '))}"><span style="display:flex">${g.map((p,k)=>`<i style="--c:${esc(p.m.color)};${k?'margin-left:-14px':''}">${esc(p.m.emoji)}</i>`).join('')}</span><small>${g.length>1?g.length+'명 · ':esc(f.m.name)+' '}${late?'늦음':koS(f.i.eta).slice(3)}</small></span>`}).join('');
+ const ph=groups.map(g=>{const late=g.some(p=>p.i.late),f=g[0];return `<span class="pin ${late?'late':''}" style="left:${f.pos}%;--c:${esc(f.m.color)}" title="${esc(g.map(p=>p.m.name+' '+koS(p.i.eta)).join(', '))}"><span style="display:flex">${g.map((p,k)=>`<i style="--c:${esc(p.m.color)};${k?'margin-left:-14px':''}">${face(p.m)}</i>`).join('')}</span><small>${g.length>1?g.length+'명 · ':esc(f.m.name)+' '}${late?'늦음':koS(f.i.eta).slice(3)}</small></span>`}).join('');
  const note=pins.length?'':`<div class="railnote">3시간 안에 집에 올 사람이 없어요</div>`;
  return `<div class="rail" aria-label="곧 도착 레일">${note}<div class="rin">${t}${ph}</div></div>`;
 }
@@ -587,14 +607,14 @@ function etaBlock(m){
  if(i.home)return `<span class="homeB">🏠 집에 있어요</span>`;
  if(i.stale)return `<div class="etaT dim">오늘 소식을 기다려요</div>`;
  if(i.open)return `<div class="etaT dim">도착 시간 미정</div>`;
- return `<div class="etaT">${koS(i.eta)} 도착 예정</div><div class="track"><b style="width:${i.pct*100}%"></b><span class="me" style="left:${i.pct*100}%">${esc(m.emoji)}</span></div><div class="left">${leftText(i)}</div>`;
+ return `<div class="etaT">${koS(i.eta)} 도착 예정</div><div class="track"><b style="width:${i.pct*100}%"></b><span class="me" style="left:${i.pct*100}%">${face(m)}</span></div><div class="left">${leftText(i)}</div>`;
 }
 function routineBadge(m){const R=S.config.routines[m.id]||[];if(!m.kid||!R.length)return '';const d=((S.daily.log[today()]||{})[m.id]||[]).filter(x=>R.some(r=>r.id===x)).length;return `<span class="rbadge">루틴 ${d}/${R.length}</span>`}
 function card(m){
  const s=S.status[m.id],i=etaInfo(s);
  const stale=s&&s.at&&ymd(new Date(s.at))!==today();
  return `<article class="arr ${i.late?'late':''}" style="--c:${esc(m.color)}">
- <div class="ava">${esc(m.emoji)}</div>
+ <div class="ava">${face(m)}</div>
  <div class="who"><b>${esc(m.name)}</b>${routineBadge(m)}<span class="st">${s?esc(s.e+' '+s.t)+' · '+ago(s.at)+(stale?' (지난 소식)':''):'상태를 올려 주세요'}</span>${s&&s.note&&!stale?`<span class="note">💬 ${esc(s.note)}</span>`:''}</div>
  <div class="etaw">${etaBlock(m)}</div>
  <div class="mini">${miniEvents(m,3)}</div>
@@ -624,10 +644,10 @@ function vHome(){
   ['👪 가족 일정',fam.length?fam.map(e=>`<span class="ln"><span class="tm">${e.start?koS(e.start):'종일'}</span>${catOf(e.cat)[1]} ${esc(e.title)}</span>`).join(''):'<span class="dim">남은 가족 일정 없음</span>'],
   ['📆 다가오는 날',dd.length?dd.map(x=>`<span class="ln"><b style="display:inline;color:var(--brand);font-size:15px">${dLabel(x.n)}</b> ${esc(x.e.title)}</span>`).join(''):'<span class="dim">등록된 기념일 없음</span>'],
   ['💌 새 메시지',u.length?u.slice(0,2).map(x=>`<span class="ln">${esc((mById(x.from)||{}).name||'')}: ${esc(x.e||'')} ${esc(x.text)}</span>`).join(''):'<span class="dim">새 소식 없음</span>']];
- return `<section class="sum">${sum.map(s=>`<div class="card"><b>${s[0]}</b><div class="v">${s[1]}</div></div>`).join('')}</section>
+ return `<div class="homegrid"><div class="side"><section class="sum">${sum.map(s=>`<div class="card"><b>${s[0]}</b><div class="v">${s[1]}</div></div>`).join('')}</section></div><div class="mainc">
  <h2>도착 안내</h2><div class="arrs">${members().map(card).join('')||'<div class="card empty">아직 가족이 없어요. <button class="btn sm pri" data-act="start-open">가족 만들기</button></div>'}</div>
  <h2>오늘 하루 한눈에</h2>${timeline()}
- <p class="dim small">빨간 선은 지금, 🏠 동그라미는 집에 도착할 예정 시각이에요.</p>`;
+ <p class="dim small">빨간 선은 지금, 🏠 동그라미는 집에 도착할 예정 시각이에요.</p></div></div>`;
 }
 function vStatus(){
  const m=mById(st.who);
@@ -637,7 +657,7 @@ function vStatus(){
  return `<h2>나는</h2><div class="chips">${members().map(x=>`<button class="chip ${st.who===x.id?'on':''}" data-act="st-who" data-id="${x.id}">${esc(x.emoji)} ${esc(x.name)}</button>`).join('')}</div>
  ${cur?`<p class="dim small" style="margin:10px 0 0">지금 올라가 있는 상태: ${esc(cur.e+' '+cur.t)}${cur.eta&&!cur.home?' · '+koS(cur.eta)+' 도착':''} · ${ago(cur.at)}</p>`:''}
  <h2>지금 어디예요?</h2><div class="grid">${PRESETS.map((p,i)=>`<button class="tile ${st.i===i?'on':''}" data-act="st-pre" data-i="${i}"><span class="e">${p[0]}</span>${p[1]}</button>`).join('')}</div>
- <label class="l" for="st-custom">직접 쓰기 (선택)</label><input id="st-custom" maxlength="24" placeholder="예: 도서관에서 공부하는 중" value="${esc(st.custom)}">
+ <label class="l" for="st-custom">직접 쓰기 (선택)</label><input id="st-custom" maxlength="24" placeholder="예: 친구 집에 있어요" value="${esc(st.custom)}">
  <h2>몇 시에 집에 와요?</h2>
  ${homeSel?'<p class="dim">집에 있으면 도착 시간은 필요 없어요.</p>':`<div class="chips">${adds.map(a=>`<button class="chip" data-act="st-add" data-m="${a}">+${a<60?a+'분':a/60+'시간'}</button>`).join('')}<button class="chip ${!st.eta?'on':''}" data-act="st-noeta">시간 미정</button></div>
  <div class="row2" style="margin-top:10px"><div><label class="l" for="st-eta">도착 예정 시각</label><input type="time" id="st-eta" value="${esc(st.eta)}"></div><div><label class="l">&nbsp;</label><div class="etaT" style="padding-top:6px">${st.eta?koS(st.eta):'-'}</div></div></div>`}
@@ -690,7 +710,7 @@ function routineCards(){
  if(!K.length)return '<div class="card empty">설정에서 아이를 ‘아이’로 표시하면 루틴이 생겨요</div>';
  const T=today();
  return `<div class="rts">${K.map(m=>{const R=S.config.routines[m.id]||[],l=(S.daily.log[T]||{})[m.id]||[],n=R.filter(r=>l.includes(r.id)).length,s=stars(m.id);
-  return `<div class="card" style="--c:${esc(m.color)}"><div class="rhead"><div class="ava">${esc(m.emoji)}</div><div><b>${esc(m.name)}</b><div class="stars">🌟 별 ${s.total}개${s.streak?` · 🔥 ${s.streak}일 연속`:''}</div></div><div class="jua" style="margin-left:auto;font-size:24px">${n}/${R.length}</div></div>
+  return `<div class="card" style="--c:${esc(m.color)}"><div class="rhead"><div class="ava">${face(m)}</div><div><b>${esc(m.name)}</b><div class="stars">🌟 별 ${s.total}개${s.streak?` · 🔥 ${s.streak}일 연속`:''}</div></div><div class="jua" style="margin-left:auto;font-size:24px">${n}/${R.length}</div></div>
   <div class="bar"><b style="width:${R.length?n/R.length*100:0}%"></b></div>
   ${R.map(r=>{const ok=l.includes(r.id);return `<button class="rt ${ok?'ok':''}" data-act="rt" data-id="${m.id}" data-r="${r.id}"><span class="e">${esc(r.e)}</span><span class="tx">${esc(r.t)}</span><span class="ck">${ok?'✓':''}</span></button>`}).join('')||'<div class="empty">설정에서 루틴을 추가해 주세요</div>'}
   ${R.length&&n===R.length?'<div class="homeB" style="margin-top:4px">🎉 오늘 루틴 완료! 별 하나 받았어요</div>':''}</div>`}).join('')}</div>`;
@@ -701,7 +721,7 @@ function msgList(L,me){
  return L.map(x=>{const f=mById(x.from)||{emoji:'❔',name:'?',color:'#ccc'};const toL=x.to==='parents'?'엄마아빠에게':x.to==='kids'?'아이들에게':x.to==='all'?'모두에게':((mById(x.to)||{}).name||'')+'에게';
   const unread=me&&me.id!==x.from&&isFor(x,me)&&!(x.read||[]).includes(me.id);
   const readers=(x.read||[]).map(id=>(mById(id)||{}).name).filter(Boolean);
-  return `<div class="msg ${unread?'new':''}" style="--c:${esc(f.color)}"><div class="ava">${esc(f.emoji)}</div><div><div class="tx">${esc(x.e||'')} ${esc(x.text)}</div><div class="dim small">${esc(f.name)} → ${esc(toL)} · ${ago(x.at)}${readers.length?' · 👀 '+esc(readers.join(', '))+' 읽음':''}</div></div>${unread?`<button class="btn sm dark" data-act="msg-read" data-id="${x.id}">확인</button>`:'<span></span>'}</div>`}).join('');
+  return `<div class="msg ${unread?'new':''}" style="--c:${esc(f.color)}"><div class="ava">${face(f)}</div><div><div class="tx">${esc(x.e||'')} ${esc(x.text)}</div><div class="dim small">${esc(f.name)} → ${esc(toL)} · ${ago(x.at)}${readers.length?' · 👀 '+esc(readers.join(', '))+' 읽음':''}</div></div>${unread?`<button class="btn sm dark" data-act="msg-read" data-id="${x.id}">확인</button>`:'<span></span>'}</div>`}).join('');
 }
 function vTalk(){
  const me=mById(prefs.me);
@@ -723,13 +743,13 @@ function vShop(){
 function vSetup(){
  const hasSample=S.events.list.some(e=>e.sample);
  return `<h2>우리 집</h2><div class="card"><label class="l" for="set-home">집 이름</label><input id="set-home" data-set="home" maxlength="16" value="${esc(S.config.home)}"></div>
- <h2>가족</h2><div class="card">${members().map(m=>`<div class="mrow"><input class="em" data-set="m-emoji" data-id="${m.id}" maxlength="4" value="${esc(m.emoji)}" aria-label="얼굴"><input class="nmi" data-set="m-name" data-id="${m.id}" maxlength="10" value="${esc(m.name)}" aria-label="이름"><input type="color" data-set="m-color" data-id="${m.id}" value="${esc(m.color)}" aria-label="색"><label><input type="checkbox" data-set="m-kid" data-id="${m.id}" ${m.kid?'checked':''}>아이</label><button class="btn sm ghost ${delArm===m.id?'warn':''}" data-act="m-del" data-id="${m.id}">${delArm===m.id?'정말?':'빼기'}</button></div>`).join('')}
+ <h2>가족</h2><div class="card">${members().map(m=>`<div class="mrow"><button class="btn ava" style="--c:${esc(m.color)};width:58px;height:58px;font-size:30px;padding:0;grid-row:auto" data-act="face-open" data-id="${m.id}" aria-label="얼굴 바꾸기">${face(m)}</button><input class="nmi" data-set="m-name" data-id="${m.id}" maxlength="10" value="${esc(m.name)}" aria-label="이름"><input type="color" data-set="m-color" data-id="${m.id}" value="${esc(m.color)}" aria-label="색"><label><input type="checkbox" data-set="m-kid" data-id="${m.id}" ${m.kid?'checked':''}>아이</label><button class="btn sm ghost ${delArm===m.id?'warn':''}" data-act="m-del" data-id="${m.id}">${delArm===m.id?'정말?':'빼기'}</button></div>`).join('')}
  <button class="btn" style="margin-top:12px" data-act="m-add">+ 가족 추가</button></div>
  <h2>아이 루틴</h2>${kids().map(m=>`<div class="card" style="margin-bottom:10px"><b>${esc(m.emoji+' '+m.name)}</b>${(S.config.routines[m.id]||[]).map(r=>`<div class="mrow"><button class="btn" style="font-size:26px;min-width:58px" data-act="rt-emo" data-id="${m.id}" data-r="${r.id}" aria-label="그림 바꾸기">${esc(r.e)}</button><input class="nmi" data-set="r-t" data-id="${m.id}" data-r="${r.id}" maxlength="20" value="${esc(r.t)}" aria-label="할 일"><button class="btn sm ghost" data-act="r-del" data-id="${m.id}" data-r="${r.id}">빼기</button></div>`).join('')}<button class="btn sm" style="margin-top:10px" data-act="r-add" data-id="${m.id}">+ 루틴 추가</button></div>`).join('')||'<div class="card empty">아이로 표시된 가족이 없어요</div>'}
  <h2>이 기기</h2><div class="card">
  <div class="sw"><span>이 기기를 쓰는 사람</span><select data-set="pref-me" style="width:auto">${members().map(m=>`<option value="${m.id}" ${prefs.me===m.id?'selected':''}>${esc(m.emoji+' '+m.name)}</option>`).join('')}</select></div>
  <div class="sw"><span>소리·음성 안내 (도착, 메시지, 픽업 10분 전)</span><input type="checkbox" data-set="pref-voice" ${prefs.voice?'checked':''}></div>
- <div class="sw"><span>화면 모양</span><select data-set="pref-screen" style="width:auto"><option value="auto" ${(prefs.screen||'auto')==='auto'?'selected':''}>자동 (가로 큰 화면은 거실 보드)</option><option value="phone" ${prefs.screen==='phone'?'selected':''}>항상 휴대폰 화면</option><option value="board" ${prefs.screen==='board'?'selected':''}>항상 거실 보드</option></select></div>
+ <div class="sw"><span>화면 모양</span><select data-set="pref-screen" style="width:auto"><option value="auto" ${(prefs.screen||'auto')==='auto'?'selected':''}>자동 (가로 큰 화면은 거실 보드)</option><option value="phone" ${prefs.screen==='phone'?'selected':''}>휴대폰 화면</option><option value="pc" ${prefs.screen==='pc'?'selected':''}>PC 화면 (넓게 보기)</option><option value="board" ${prefs.screen==='board'?'selected':''}>항상 거실 보드</option></select></div>
  <div class="sw"><span>밤 9시~아침 6시 어두운 화면</span><input type="checkbox" data-set="pref-night" ${prefs.night?'checked':''}></div>
  <button class="btn" style="margin-top:12px" data-act="voice-test">🔊 음성 들어 보기</button>
 </div>
@@ -738,9 +758,8 @@ function vSetup(){
  ${CFG&&prefs.code?`<div class="sw"><span>가족 코드</span><span>${showCode?esc(prefs.code):'••••-••••-••••'}</span></div>
  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn pri" data-act="invite-copy">💌 초대 링크 복사</button><button class="btn" data-act="code-show">${showCode?'코드 숨기기':'코드 보기'}</button><button class="btn ghost" data-act="code-forget">이 기기 연결 끊기</button></div>
  <input id="inv-out" readonly style="display:none;margin-top:10px">
- <p class="dim small">초대 링크와 코드는 가족에게만 보내 주세요. 받은 가족이 링크를 누르면 바로 들어올 수 있어요.</p>`:''}
+`:''}
  ${CFG&&!prefs.code?`<p style="margin:10px 0 0">아직 가족과 연결되지 않아 이 기기에만 저장되고 있어요.</p><button class="btn pri" style="margin-top:10px" data-act="start-open">가족 만들기 · 초대 코드 넣기</button>`:''}
- ${!CFG||syncState==='denied'?guideHTML():''}
  </div>
  <h2>백업</h2><div class="card"><label class="l" for="bk-out">지금 데이터 (복사해서 보관)</label><textarea id="bk-out" readonly>${esc(JSON.stringify(S))}</textarea><div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><button class="btn" data-act="bk-copy">복사하기</button><button class="btn" data-act="bk-file">백업 파일 내려받기</button></div>
  <label class="l" for="bk-in">백업 붙여넣어 되살리기</label><textarea id="bk-in" placeholder="복사해 둔 내용을 붙여 넣으세요"></textarea><button class="btn ${restoreArm?'warn':''}" style="margin-top:8px" data-act="bk-restore">${restoreArm?'지금 내용을 덮어써요. 한 번 더 누르기':'되살리기'}</button></div>
@@ -783,12 +802,37 @@ function renderRt(){
  <label class="l" for="rt-own">원하는 그림 직접 넣기 (선택)</label><input id="rt-own" maxlength="4" placeholder="이모지 하나를 붙여 넣거나 입력">
  <div class="row2" style="margin-top:18px"><button class="btn" data-act="d-close">닫기</button><button class="btn pri" data-act="rt-save">저장하기</button></div>`;
 }
+
+const FACE_SET=[
+ ['사람',['👩','👨','👧','👦','👶','🧒','🧑','👵','👴','👱‍♀️','👱‍♂️','👩‍🦱','👨‍🦱','👩‍🦰','👨‍🦰','👩‍🦳','👨‍🦳','🧔','👸','🤴','🧕','👲','🙋‍♀️','🙋‍♂️']],
+ ['동물',['🐶','🐱','🐰','🐻','🐼','🦊','🐯','🦁','🐸','🐵','🐧','🐥','🦄','🐹','🐨','🐮','🐷','🦖','🐢','🐬']],
+ ['재미',['😀','😎','🤓','🥰','😺','👻','🤖','👽','🌸','🌻','⭐','🌈','⚽','🎀','🚀','🍀']]];
+let faceT=null;
+function openFace(id){faceT={id,cat:0};renderFace();$('#modal').classList.add('open')}
+function renderFace(){
+ const m=mById(faceT.id);if(!m){closeSheet();return}
+ $('#sheet').innerHTML=`<h2>얼굴 바꾸기 · ${esc(m.name)}</h2>
+ <div style="display:flex;gap:14px;align-items:center"><div class="ava" style="--c:${esc(m.color)};width:96px;height:96px;font-size:56px;grid-row:auto">${face(m)}</div>
+ <div style="display:flex;flex-direction:column;gap:8px"><label class="btn pri" style="display:inline-grid;place-items:center;cursor:pointer">📷 사진으로 바꾸기<input type="file" accept="image/*" id="face-file" style="display:none"></label>${m.photo?'<button class="btn" data-act="face-nophoto">사진 지우고 그림 쓰기</button>':''}</div></div>
+ <p class="dim small">사진은 동그랗게 잘라 작게 줄여서 저장해요. 가족 코드로 연결된 기기에서만 보여요.</p>
+ <label class="l">그림 고르기</label><div class="chips" style="margin-bottom:10px">${FACE_SET.map((c,i)=>`<button class="chip ${faceT.cat===i?'on':''}" data-act="face-cat" data-i="${i}">${c[0]}</button>`).join('')}</div>
+ <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:6px">${FACE_SET[faceT.cat][1].map(e=>`<button class="tile" style="min-height:52px;font-size:30px;padding:0;${!m.photo&&e===m.emoji?'border-color:var(--brand);background:var(--brand2)':''}" data-act="face-pick" data-e="${e}">${e}</button>`).join('')}</div>
+ <label class="l" for="face-own">원하는 그림 직접 넣기</label><div class="sendrow" style="margin-top:0"><input id="face-own" maxlength="8" placeholder="이모지를 입력하거나 붙여 넣기 (예: 🦸)"><button class="btn pri" data-act="face-own">넣기</button></div>
+ <p class="dim small">휴대폰은 키보드의 😀 버튼, PC는 윈도우 키 + 마침표(.)를 누르면 이모지를 고를 수 있어요.</p>
+ <button class="btn" style="width:100%;margin-top:12px" data-act="d-close">닫기</button>`;
+}
+function photoToData(file){return new Promise((res,rej)=>{const fr=new FileReader();fr.onerror=rej;fr.onload=()=>{const im=new Image();im.onerror=rej;im.onload=()=>{const N=160,c=document.createElement('canvas');c.width=c.height=N;const g=c.getContext('2d');const sz=Math.min(im.width,im.height);g.drawImage(im,(im.width-sz)/2,(im.height-sz)/2,sz,sz,0,0,N,N);res(c.toDataURL('image/jpeg',0.82))};im.src=fr.result};fr.readAsDataURL(file)})}
+document.addEventListener('change',async ev=>{
+ if(ev.target.id!=='face-file'||!faceT)return;
+ const f=ev.target.files&&ev.target.files[0];if(!f)return;
+ try{const u=await photoToData(f);const m=mById(faceT.id);if(!m)return;if(!okPhoto(u))return toast('이 사진은 쓸 수 없어요');m.photo=u;save('config');renderFace();toast('사진으로 바꿨어요')}catch(e){toast('사진을 읽지 못했어요. 다른 사진을 골라 주세요')}
+});
 const V={home:vHome,status:vStatus,plan:vPlan,month:vMonth,routine:vRoutine,talk:vTalk,shop:vShop,setup:vSetup};
 
 /* ---------- 거실 보드 ---------- */
 function brow(m){
  const s=S.status[m.id],i=etaInfo(s),stale=s&&s.at&&ymd(new Date(s.at))!==today();
- return `<div class="brow ${i.late?'late':''}" style="--c:${esc(m.color)}"><div class="p"><div class="ava">${esc(m.emoji)}</div>${esc(m.name)}${routineBadge(m)}</div>
+ return `<div class="brow ${i.late?'late':''}" style="--c:${esc(m.color)}"><div class="p"><div class="ava">${face(m)}</div>${esc(m.name)}${routineBadge(m)}</div>
  <div class="c2"><div class="cap">지금 · ${s?ago(s.at):''}</div><div class="bnow"><span class="ic">${s?esc(s.e):'❔'}</span><div><div class="big">${s?esc(s.t):'소식 없음'}${stale?' <span class="dim small">(지난 소식)</span>':''}</div>${s&&s.note&&!stale?`<span class="note">💬 ${esc(s.note)}</span>`:''}</div></div></div>
  <div class="c3"><div class="cap">도착 예정</div>${etaBlock(m)}</div>
  <div class="c4"><div class="cap">오늘 일정</div><div class="mini" style="grid-column:auto">${miniEvents(m,3)}</div></div></div>`;
@@ -831,7 +875,7 @@ function render(){
  dirty=false;
  $('#top').innerHTML=topHTML();
  $('#nav').innerHTML=navHTML();
- $('#main').innerHTML=(V[view]||vHome)();
+ $('#main').dataset.v=view;$('#main').innerHTML=(V[view]||vHome)();
  if(boardOpen)$('#board').innerHTML=boardHTML();
 }
 function busy(){const a=document.activeElement;return a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)&&a.type!=='checkbox'}
@@ -948,6 +992,11 @@ const A={
  'm-add':()=>{const cols=['#ffb74d','#9575cd','#4db6ac','#e57373','#64b5f6'];members().push({id:'m'+uid(),name:'새 가족',emoji:'🙂',color:cols[members().length%cols.length],kid:true});save('config')},
  'm-del':t=>{const id=t.dataset.id;if(delArm!==id){delArm=id;render();return}delArm=null;S.config.members=members().filter(m=>m.id!==id);delete S.config.routines[id];delete S.status[id];if(prefs.me===id){prefs.me=(members()[0]||{}).id||'';savePrefs()}save('config');save('status')},
  'r-add':t=>openRt(t.dataset.id,null),
+ 'face-open':t=>openFace(t.dataset.id),
+ 'face-cat':t=>{faceT.cat=+t.dataset.i;renderFace()},
+ 'face-pick':t=>{const m=mById(faceT.id);if(!m)return;m.emoji=t.dataset.e;delete m.photo;save('config');renderFace()},
+ 'face-own':()=>{const i=$('#face-own'),v=i&&i.value.trim();if(!v)return toast('넣을 그림을 써 주세요');const g=Array.from(new Intl.Segmenter?new Intl.Segmenter('ko',{granularity:'grapheme'}).segment(v):v).map(x=>x.segment||x);const e=g.slice(0,2).join('');const m=mById(faceT.id);if(!m)return;m.emoji=e;delete m.photo;save('config');renderFace();toast('얼굴을 바꿨어요')},
+ 'face-nophoto':()=>{const m=mById(faceT.id);if(!m)return;delete m.photo;save('config');renderFace()},
  'rt-emo':t=>openRt(t.dataset.id,t.dataset.r),
  'emo-pick':t=>{syncRt();rtD.e=t.dataset.e;renderRt()},
  'emo-cat':t=>{syncRt();rtD.cat=+t.dataset.i;renderRt()},
@@ -979,8 +1028,8 @@ function doSend(me,e,text,fromBoard){
  if(fromBoard)speak(text==='집에 왔어요'?me.name+', 어서 와요!':'보냈어요');
 }
 let wake=null,menuOverride=false,idleT=Date.now();
-function boardWanted(){const m=prefs.screen||'auto';if(m==='board')return true;if(m==='phone')return false;return innerWidth>=1000&&innerWidth>innerHeight}
-function applyMode(){const want=boardWanted()&&!menuOverride;if(want&&!boardOpen)openBoard();else if(!want&&boardOpen)closeBoard();else render()}
+function boardWanted(){const m=prefs.screen||'auto';if(m==='board')return true;if(m==='phone'||m==='pc')return false;return innerWidth>=1000&&innerWidth>innerHeight}
+function applyMode(){document.body.classList.toggle('pc',prefs.screen==='pc');const want=boardWanted()&&!menuOverride;if(want&&!boardOpen)openBoard();else if(!want&&boardOpen)closeBoard();else render()}
 let rzT=null;window.addEventListener('resize',()=>{clearTimeout(rzT);rzT=setTimeout(()=>{if(!boardWanted())menuOverride=false;applyMode()},250)});
 async function openBoard(){boardOpen=true;bview='arr';bKid=null;render();$('#board').classList.add('open');document.body.style.overflow='hidden';try{wake=await navigator.wakeLock.request('screen')}catch(e){wake=null}}
 function closeBoard(){boardOpen=false;$('#board').classList.remove('open');document.body.style.overflow='';try{if(document.fullscreenElement)document.exitFullscreen()}catch(e){}try{wake&&wake.release()}catch(e){}wake=null;try{history.replaceState(null,'','#'+view)}catch(e){}render()}
