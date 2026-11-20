@@ -16,12 +16,12 @@
    Firebase 웹 앱 등록 후 나오는 firebaseConfig 의 { } 안 내용으로
    아래 빈 따옴표 줄들을 바꿔 넣고 저장하세요.                    */
 window.FIREBASE_CONFIG = {
- apiKey: "AIzaSyCi86X4a47mVlJpoLCzp6LXq0BUBR5Ri48",
-  authDomain: "dochak-8e54d.firebaseapp.com",
-  projectId: "dochak-8e54d",
-  storageBucket: "dochak-8e54d.firebasestorage.app",
-  messagingSenderId: "679075396806",
-  appId: "1:679075396806:web:2e3621c707d0a1c9baebc7",
+  apiKey: "",
+  authDomain: "",
+  projectId: "",
+  storageBucket: "",
+  messagingSenderId: "",
+  appId: ""
 };
 /* 만든 사람 이름 (설정 화면 맨 아래에 표시, 비워도 돼요) */
 window.APP_MAKER = "";
@@ -419,7 +419,7 @@ async function flush(sec){
  try{await fs.setDoc(fs.doc(fs.db,'families',famId,'state',sec),{d:JSON.parse(JSON.stringify(S[sec])),at:Date.now()})}
  catch(e){
   const c=String(e&&e.code||'');
-  if(c.includes('permission-denied')){canWrite=false;syncState='denied';toast('저장 권한이 없어요. 설정 탭의 Firestore 규칙을 확인해 주세요');safeRender()}
+  if(c.includes('permission-denied')){if(!famOk){writing[sec]=false;famDenied();return}canWrite=false;syncState='denied';toast('저장 권한이 없어요. Firestore 규칙을 확인해 주세요');safeRender()}
   else if(c.includes('resource-exhausted')){toast('오늘 무료 사용량을 다 썼어요. 내일 다시 저장돼요')}
   else{pending[sec]=true;setTimeout(()=>{writing[sec]=false;flush(sec)},2000+Math.random()*2000);return}
  }
@@ -457,7 +457,7 @@ async function connect(){
    const old=S[sec];S[sec]=nv;
    if(sec==='config'&&!mById(prefs.me))prefs.me=(members()[0]||{}).id||'';
    onRemote(sec,old,nv);saveLocal();safeRender();
-  },err=>{clearTimeout(loadT);syncState=String(err&&err.code||'').includes('permission')?'denied':'fail';safeRender()}));
+  },err=>{clearTimeout(loadT);const perm=String(err&&err.code||'').includes('permission');if(perm&&!famOk){famDenied();return}syncState=perm?'denied':'fail';safeRender()}));
  });
 }
 const RULES=`rules_version = '2';
@@ -470,6 +470,35 @@ service cloud.firestore {
   }
 }`;
 function newCode(){const a='abcdefghjkmnpqrstuvwxyz23456789';let o='';const r=crypto.getRandomValues(new Uint8Array(12));r.forEach((x,i)=>{o+=a[x%a.length];if(i===3||i===7)o+='-'});return o}
+let denyBusy=false;
+function famDenied(){
+ if(denyBusy)return;denyBusy=true;setTimeout(()=>denyBusy=false,3000);
+ unsubs.forEach(u=>{try{u()}catch(e){}});unsubs=[];fs=null;SECS.forEach(k=>{pending[k]=false});
+ const wasCreate=prefs.mayCreate;prefs.code='';prefs.mayCreate=false;savePrefs();syncState='nocode';
+ if(wasCreate){S=emptyState('우리집',[]);saveLocal()}
+ safeRender();
+ showJoin('',wasCreate?'이 사이트는 한 가족만 쓸 수 있게 잠겨 있어요. 가족에게 받은 코드로 들어와 주세요.':'가족 코드가 맞지 않아요. 다시 확인해 주세요.');
+}
+function lockRules(){return `rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /families/{fam}/state/{sec} {
+      allow get, write: if fam == '${famId}'
+        && sec in ['config','status','events','msgs','daily','shop'];
+    }
+  }
+}`}
+function showLock(){
+ openSheet(`<h2>🔒 우리 가족만 쓰게 잠그기</h2>
+ <p style="margin-top:0">잠그면 이 사이트에서는 <b>지금 우리 가족 코드만</b> 쓸 수 있어요. 주소를 아는 다른 사람이 ‘새 가족 만들기’를 눌러도 만들어지지 않아요.</p>
+ <ol style="padding-left:20px;margin:0 0 6px">
+  <li style="margin-bottom:6px">아래 <b>잠금 규칙 복사</b>를 눌러요.</li>
+  <li style="margin-bottom:6px">Firebase 콘솔 → <b>Firestore Database</b> → <b>규칙</b> 탭에서 원래 글을 모두 지우고 붙여 넣어요.</li>
+  <li><b>게시</b>를 누르면 끝이에요. 1분쯤 뒤부터 적용돼요.</li></ol>
+ <textarea id="lock-out" readonly style="font:13px/1.5 ui-monospace,Consolas,monospace;min-height:190px">${esc(lockRules())}</textarea>
+ <div class="row2" style="margin-top:10px"><button class="btn" data-act="d-close">닫기</button><button class="btn pri" data-act="lock-copy">잠금 규칙 복사</button></div>
+ <p class="dim small">잠근 뒤에는 가족 코드를 바꾸거나 ‘이 기기 연결 끊기’ 후 새 가족을 만들 수 없어요. 다시 풀려면 설명서 부록의 원래 규칙을 붙여 넣으면 돼요.</p>`);
+}
 function famMissing(){
  unsubs.forEach(u=>{try{u()}catch(e){}});unsubs=[];fs=null;
  const bad=prefs.code;prefs.code='';savePrefs();syncState='nocode';safeRender();
@@ -769,7 +798,7 @@ function vSetup(){
  <h2>가족 연결</h2><div class="card">
  <div class="sw"><span>상태</span><span class="${syncState==='on'?'':'warn'}" style="font-size:15px">${syncTxt[syncState]}</span></div>
  ${CFG&&prefs.code?`<div class="sw"><span>가족 코드</span><span>${showCode?esc(prefs.code):'••••-••••-••••'}</span></div>
- <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn pri" data-act="invite-copy">💌 초대 링크 복사</button><button class="btn" data-act="code-show">${showCode?'코드 숨기기':'코드 보기'}</button><button class="btn ghost" data-act="code-forget">이 기기 연결 끊기</button></div>
+ <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn pri" data-act="invite-copy">💌 초대 링크 복사</button><button class="btn" data-act="code-show">${showCode?'코드 숨기기':'코드 보기'}</button><button class="btn" data-act="lock-open">🔒 우리 가족만 쓰게 잠그기</button><button class="btn ghost" data-act="code-forget">이 기기 연결 끊기</button></div>
  <input id="inv-out" readonly style="display:none;margin-top:10px">
 `:''}
  ${CFG&&!prefs.code?`<p style="margin:10px 0 0">아직 가족과 연결되지 않아 이 기기에만 저장되고 있어요.</p><button class="btn pri" style="margin-top:10px" data-act="start-open">가족 만들기 · 초대 코드 넣기</button>`:''}
@@ -1023,6 +1052,8 @@ const A={
  'm-del':t=>{const id=t.dataset.id;if(delArm!==id){delArm=id;render();return}delArm=null;S.config.members=members().filter(m=>m.id!==id);delete S.config.routines[id];delete S.status[id];if(prefs.me===id){prefs.me=(members()[0]||{}).id||'';savePrefs()}save('config');save('status')},
  'r-add':t=>openRt(t.dataset.id,null),
  'face-open':t=>openFace(t.dataset.id),
+ 'lock-open':()=>{if(!famId||syncState!=='on')return toast('가족 연결이 된 상태에서 잠글 수 있어요');showLock()},
+ 'lock-copy':async()=>{try{await navigator.clipboard.writeText(lockRules());toast('잠금 규칙을 복사했어요. Firebase 규칙 탭에 붙여 넣어 주세요')}catch(e){const a=$('#lock-out');a.select();toast('글자를 길게 눌러 복사해 주세요')}},
  'theme':t=>{S.config.theme=t.dataset.c;S.config.season='off';save('config')},
  'season':t=>{S.config.season=t.dataset.v;save('config')},
  'face-cat':t=>{faceT.cat=+t.dataset.i;renderFace()},
