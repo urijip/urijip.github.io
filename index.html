@@ -16,12 +16,12 @@
    Firebase 웹 앱 등록 후 나오는 firebaseConfig 의 { } 안 내용으로
    아래 빈 따옴표 줄들을 바꿔 넣고 저장하세요.                    */
 window.FIREBASE_CONFIG = {
- apiKey: "AIzaSyCi86X4a47mVlJpoLCzp6LXq0BUBR5Ri48",
-  authDomain: "dochak-8e54d.firebaseapp.com",
-  projectId: "dochak-8e54d",
-  storageBucket: "dochak-8e54d.firebasestorage.app",
-  messagingSenderId: "679075396806",
-  appId: "1:679075396806:web:2e3621c707d0a1c9baebc7",
+  apiKey: "",
+  authDomain: "",
+  projectId: "",
+  storageBucket: "",
+  messagingSenderId: "",
+  appId: ""
 };
 /* 만든 사람 이름 (설정 화면 맨 아래에 표시, 비워도 돼요) */
 window.APP_MAKER = "";
@@ -48,6 +48,10 @@ button{font:inherit;color:inherit;cursor:pointer}
 /* 위 띠 */
 .top{background:var(--brand);color:var(--onb);padding:18px max(4vw,16px) 16px}
 .toprow{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px 20px;max-width:1100px;margin:0 auto}
+.bell{border:0;background:rgba(255,255,255,.2);border-radius:99px;min-height:34px;padding:0 10px;font-size:17px;display:inline-flex;align-items:center;gap:2px;cursor:pointer}
+.bell .badge{margin-left:2px}
+.fi{display:flex;gap:10px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--line);width:100%;background:none;border-left:0;border-right:0;border-top:0;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.fi.new b::after{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--late);margin-left:6px;vertical-align:2px}
 .ttl{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.ttl .sync{margin-top:0}
 .top h1{font-family:Jua,sans-serif;font-weight:400;font-size:clamp(30px,6vw,44px);line-height:1.05;margin:0;text-wrap:balance}
 .top .sub{font-size:14px;opacity:.92;font-weight:500}
@@ -398,6 +402,12 @@ function loadLocal(){try{const r=localStorage.getItem(KEY);return r?JSON.parse(r
 function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 let prefs={me:'',voice:true,night:true};
 try{Object.assign(prefs,JSON.parse(localStorage.getItem(PKEY)||'{}'))}catch(e){}
+if(!prefs.dev){prefs.dev=Math.random().toString(36).slice(2,10);try{localStorage.setItem(PKEY,JSON.stringify(prefs))}catch(e){}}
+const FKEY='urijip-dochak-feed';let FEED=[];try{FEED=JSON.parse(localStorage.getItem(FKEY)||'[]')}catch(e){FEED=[]}
+const saveFeed=()=>{try{localStorage.setItem(FKEY,JSON.stringify(FEED.slice(0,60)))}catch(e){}};
+const unseen=()=>FEED.filter(x=>!x.seen).length;
+function updBadge(){const n=unseen();try{if('setAppBadge' in navigator){n?navigator.setAppBadge(n).catch(()=>{}):navigator.clearAppBadge().catch(()=>{})}}catch(e){}}
+function feedAdd(items){if(!items.length)return;const now=Date.now();items.forEach(x=>FEED.unshift({id:uid(),at:now,seen:false,...x}));FEED=FEED.slice(0,60);saveFeed();updBadge()}
 const savePrefs=()=>{try{localStorage.setItem(PKEY,JSON.stringify(prefs))}catch(e){}};
 
 const FACES=['👩','👨','👧','👦','👵','👴','👶','🧒','🧑','🐶','🐱','🐰'];
@@ -432,7 +442,7 @@ function save(sec){saveLocal();render();if(fs&&canWrite){pending[sec]=true;clear
 async function flush(sec){
  if(!fs||writing[sec]||!pending[sec])return;
  pending[sec]=false;writing[sec]=true;
- try{await fs.setDoc(fs.doc(fs.db,'families',famId,'state',sec),{d:JSON.parse(JSON.stringify(S[sec])),at:Date.now()})}
+ try{await fs.setDoc(fs.doc(fs.db,'families',famId,'state',sec),{d:JSON.parse(JSON.stringify(S[sec])),at:Date.now(),by:prefs.me||'',dev:prefs.dev})}
  catch(e){
   const c=String(e&&e.code||'');
   if(c.includes('permission-denied')){if(!famOk){writing[sec]=false;famDenied();return}canWrite=false;syncState='denied';toast('저장 권한이 없어요. Firestore 규칙을 확인해 주세요');safeRender()}
@@ -471,7 +481,10 @@ async function connect(){
    const nv=norm(sec,JSON.parse(JSON.stringify(d.d||{})));
    const old=S[sec];S[sec]=nv;
    if(sec==='config'&&!mById(prefs.me))prefs.me=(members()[0]||{}).id||'';
-   onRemote(sec,old,nv);saveLocal();safeRender();
+   const first=!snapSeen[sec];snapSeen[sec]=true;
+   if(d.dev!==prefs.dev&&(prefs.synced||{})[sec])feedAdd(diffFeed(sec,old,nv,d.by));
+   if(!(prefs.synced||{})[sec]){prefs.synced=Object.assign({},prefs.synced,{[sec]:true});savePrefs()}
+   if(!first)onRemote(sec,old,nv);saveLocal();safeRender();
   },err=>{clearTimeout(loadT);const perm=String(err&&err.code||'').includes('permission');if(perm&&!famOk){famDenied();return}syncState=perm?'denied':'fail';safeRender()}));
  });
 }
@@ -531,6 +544,12 @@ function famMissing(){
  showJoin(bad,'그 코드로 만든 가족을 찾지 못했어요. 코드를 다시 확인해 주세요.');
 }
 function openSheet(html,lock){$('#sheet').innerHTML=html;sheetLock=!!lock;$('#modal').classList.add('open')}
+function badgeState(){
+ if(!('setAppBadge' in navigator)||!('Notification' in window))return '<span class="dim small" style="text-align:right;max-width:46%">이 화면에서는 안 돼요. 아이폰은 홈 화면에 추가한 ‘함께’에서 켜 주세요</span>';
+ if(Notification.permission==='granted')return '<span style="color:var(--ok);font-weight:700">켜짐 ✓</span>';
+ if(Notification.permission==='denied')return '<span class="dim small" style="text-align:right;max-width:46%">꺼져 있어요. 아이폰 설정 → 알림 → 함께에서 켜 주세요</span>';
+ return '<button class="btn sm pri" data-act="badge-on">켜기</button>';
+}
 function showStart(again){
  if(!again&&CFG)checkClaimed();
  openSheet(`<div style="text-align:center;padding:6px 0 4px"><div style="font-size:56px;line-height:1">🏡</div><h2 style="margin:10px 0 6px;font-size:34px">함께</h2><p class="dim" style="margin:0">가족이 언제 오는지, 오늘 무슨 일정이 있는지 한눈에</p></div>
@@ -565,6 +584,24 @@ function chime(){if(!actx)return;try{const t=actx.currentTime;[784,1047].forEach
 function speak(text){if(!prefs.voice)return;try{const u=new SpeechSynthesisUtterance(text);u.lang='ko-KR';u.rate=1;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
 let tt=null;
 function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('show'),2600)}
+const snapSeen={};
+function diffFeed(sec,old,nv,by){
+ const who=(mById(by)||{}).name||'가족',W=jo(who,'이','가'),out=[];
+ try{
+ if(sec==='events'){
+  const om=new Map(((old&&old.list)||[]).map(e=>[e.id,e])),nm=new Map(nv.list.map(e=>[e.id,e]));
+  for(const e of nv.list){const o=om.get(e.id);const c=catOf(e.cat)[1];
+   if(!o)out.push({k:'ev',x:e.id,d:e.date,text:`${W} ${c} ‘${e.title}’ 일정을 넣었어요`});
+   else{const a=JSON.stringify(Object.assign({},o,{skip:0})),b=JSON.stringify(Object.assign({},e,{skip:0}));if(a!==b)out.push({k:'ev',x:e.id,d:e.date,text:`${W} ${c} ‘${e.title}’ 일정을 고쳤어요`});else if(JSON.stringify(o.skip||[])!==JSON.stringify(e.skip||[]))out.push({k:'ev',x:e.id,d:e.date,text:`${W} ‘${e.title}’ 일정 하루를 뺐어요`})}}
+  for(const [id,o] of om)if(!nm.has(id))out.push({k:'plan',text:`${W} ‘${o.title}’ 일정을 지웠어요`});
+ }
+ if(sec==='status'){for(const m of members()){const a=old&&old[m.id],b=nv[m.id];if(!b||(a&&a.at===b.at))continue;out.push({k:'home',text:`${m.name} → ${b.e} ${b.t}${b.eta&&!b.home?' · '+koS(b.eta)+' 도착 예정':''}`})}}
+ if(sec==='msgs'){const ids=new Set(((old&&old.list)||[]).map(x=>x.id));const me=mById(prefs.me);for(const x of nv.list){if(ids.has(x.id))continue;if(me&&!isFor(x,me))continue;const f=mById(x.from);out.push({k:'talk',text:`${f?f.name:'가족'}: ${x.e||'💌'} ${x.text}`})}}
+ if(sec==='shop'){const ids=new Set(((old&&old.list)||[]).map(x=>x.id));const add=nv.list.filter(x=>!ids.has(x.id));if(add.length)out.push({k:'shop',text:`${W} 장보기 목록에 ${add.map(x=>'‘'+x.t+'’').join(', ')} 넣었어요`})}
+ if(sec==='config'){const strip=c=>JSON.stringify({h:c.home,m:c.members,r:c.routines,t:c.theme,s:c.season});if(old&&strip(old)!==strip(nv))out.push({k:'setup',text:`${W} 가족 설정을 바꿨어요`})}
+ }catch(e){}
+ return out.reverse();
+}
 function onRemote(sec,old,nv){
  if(sec==='status'){
   for(const m of members()){
@@ -652,7 +689,7 @@ const syncTxt={local:'이 기기에만 저장 중',nocfg:'동기화 설정 전 �
 
 function topHTML(){
  const d=new Date();
- return `<div class="toprow"><div><div class="sub">${esc(S.config.home)} · 가족 귀가·일정 알림판</div><div class="ttl"><h1>함께${curSeason()?`<span class="sdeco">${SEASONS[curSeason()].e}</span>`:''}</h1><button class="sync ${syncState==='on'?'on':''}" data-act="tab" data-v="setup" style="border:0;color:var(--onb);cursor:pointer"><i></i>${syncTxt[syncState]}</button></div></div>
+ return `<div class="toprow"><div><div class="sub">${esc(S.config.home)} · 가족 귀가·일정 알림판</div><div class="ttl"><h1>함께${curSeason()?`<span class="sdeco">${SEASONS[curSeason()].e}</span>`:''}</h1><button class="sync ${syncState==='on'?'on':''}" data-act="tab" data-v="setup" style="border:0;color:var(--onb);cursor:pointer"><i></i>${syncTxt[syncState]}</button><button class="bell" data-act="feed-open" aria-label="바뀐 내용 보기">🔔${unseen()?`<span class="badge">${unseen()}</span>`:''}</button></div></div>
  <div class="clockbox"><div><div class="sub">${d.getMonth()+1}월 ${d.getDate()}일 ${DOW[d.getDay()]}요일 · ${luLong(today())} · <span class="js-ap">${ampm()}</span></div>${clockHTML()}</div>${boardWanted()&&menuOverride?'<button class="boardbtn" data-act="board-back">📺 보드 화면으로</button>':''}</div></div>${railHTML()}`;
 }
 function navHTML(){
@@ -819,6 +856,7 @@ function vSetup(){
  <div class="sw"><span>이 기기를 쓰는 사람</span><select data-set="pref-me" style="width:auto">${members().map(m=>`<option value="${m.id}" ${prefs.me===m.id?'selected':''}>${esc(m.emoji+' '+m.name)}</option>`).join('')}</select></div>
  <div class="sw"><span>소리·음성 안내 (도착, 메시지, 픽업 10분 전)</span><input type="checkbox" data-set="pref-voice" ${prefs.voice?'checked':''}></div>
  <div class="sw"><span>화면 모양</span><select data-set="pref-screen" style="width:auto"><option value="auto" ${(prefs.screen||'auto')==='auto'?'selected':''}>자동 (가로 큰 화면은 거실 보드)</option><option value="phone" ${prefs.screen==='phone'?'selected':''}>휴대폰 화면</option><option value="pc" ${prefs.screen==='pc'?'selected':''}>PC 화면 (넓게 보기)</option><option value="board" ${prefs.screen==='board'?'selected':''}>항상 거실 보드</option></select></div>
+ <div class="sw"><span>📱 아이콘 숫자 알림<span class="dim small" style="display:block;font-weight:500">다른 가족이 바꾼 내용 개수를 앱 아이콘에 표시해요</span></span>${badgeState()}</div>
  <div class="sw"><span>계절 테마 움직이는 꽃잎·눈 효과</span><input type="checkbox" data-set="pref-fx" ${prefs.fx!==false?'checked':''}></div>
  <div class="sw"><span>밤 9시~아침 6시 어두운 화면</span><input type="checkbox" data-set="pref-night" ${prefs.night?'checked':''}></div>
  <button class="btn" style="margin-top:12px" data-act="voice-test">🔊 음성 들어 보기</button>
@@ -1082,6 +1120,13 @@ const A={
  'm-del':t=>{const id=t.dataset.id;if(delArm!==id){delArm=id;render();return}delArm=null;S.config.members=members().filter(m=>m.id!==id);delete S.config.routines[id];delete S.status[id];if(prefs.me===id){prefs.me=(members()[0]||{}).id||'';savePrefs()}save('config');save('status')},
  'r-add':t=>openRt(t.dataset.id,null),
  'face-open':t=>openFace(t.dataset.id),
+ 'feed-open':()=>{const L=FEED.slice(0,40);openSheet(`<div class="hd"><h2 style="margin:0">🔔 바뀐 내용</h2>${FEED.length?'<button class="btn sm ghost" data-act="feed-clear">기록 지우기</button>':''}</div>
+  <p class="dim small" style="margin:6px 0 4px">다른 가족이 바꾼 내용이에요. 누르면 그 화면으로 가요.</p>
+  ${L.length?L.map(x=>`<button class="fi ${x.seen?'':'new'}" data-act="feed-go" data-k="${esc(x.k)}" data-x="${esc(x.x||'')}" data-d="${esc(x.d||'')}"><span style="font-size:20px">${x.k==='talk'?'💌':x.k==='shop'?'🛒':x.k==='home'?'📍':x.k==='setup'?'⚙️':'🗓️'}</span><span style="flex:1"><b style="font-weight:700">${esc(x.text)}</b><span class="dim small" style="display:block">${ago(x.at)}</span></span></button>`).join(''):'<div class="empty">아직 바뀐 내용이 없어요</div>'}
+  <button class="btn" style="width:100%;margin-top:14px" data-act="d-close">닫기</button>`);FEED.forEach(x=>x.seen=true);saveFeed();updBadge();$('#nav')&&($('#top').innerHTML=topHTML())},
+ 'feed-go':t=>{const k=t.dataset.k;closeSheet();if(k==='ev'){const e=S.events.list.find(x=>x.id===t.dataset.x);if(e)selDate=nextOcc(e)||e.date;go('plan')}else go(k==='plan'?'plan':k==='talk'?'talk':k==='shop'?'shop':k==='setup'?'setup':'home')},
+ 'feed-clear':()=>{FEED=[];saveFeed();updBadge();closeSheet();render()},
+ 'badge-on':async()=>{try{const r=await Notification.requestPermission();toast(r==='granted'?'아이콘 숫자 알림을 켰어요':'알림이 허용되지 않았어요. 아이폰 설정 → 알림 → 함께에서 켤 수 있어요');updBadge();render()}catch(e){toast('이 기기에서는 켤 수 없어요')}},
  'lock-open':()=>{if(!famId||syncState!=='on')return toast('가족 연결이 된 상태에서 잠글 수 있어요');showLock()},
  'lock-copy':async()=>{try{await navigator.clipboard.writeText(lockRules());toast('잠금 규칙을 복사했어요. Firebase 규칙 탭에 붙여 넣어 주세요')}catch(e){const a=$('#lock-out');a.select();toast('글자를 길게 눌러 복사해 주세요')}},
  'theme':t=>{S.config.theme=t.dataset.c;S.config.season='off';save('config')},
@@ -1195,7 +1240,9 @@ applyMode();
 window.addEventListener('hashchange',()=>{const h=location.hash.slice(1);if(V[h]&&h!==view){view=h;render()}});
 if(joinHash&&joinHash!==prefs.code)showJoin(joinHash);
 else if(!CFG&&firstRun)showStart();
-if(!(joinHash&&joinHash!==prefs.code))connect();
+if(!(joinHash&&joinHash!==prefs.code))updBadge();
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)updBadge()});
+connect();
 }
 </script>
 </body>
