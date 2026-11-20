@@ -16,12 +16,12 @@
    Firebase 웹 앱 등록 후 나오는 firebaseConfig 의 { } 안 내용으로
    아래 빈 따옴표 줄들을 바꿔 넣고 저장하세요.                    */
 window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyCi86X4a47mVlJpoLCzp6LXq0BUBR5Ri48",
-  authDomain: "dochak-8e54d.firebaseapp.com",
-  projectId: "dochak-8e54d",
-  storageBucket: "dochak-8e54d.firebasestorage.app",
-  messagingSenderId: "679075396806",
-  appId: "1:679075396806:web:2e3621c707d0a1c9baebc7",
+  apiKey: "",
+  authDomain: "",
+  projectId: "",
+  storageBucket: "",
+  messagingSenderId: "",
+  appId: ""
 };
 /* 만든 사람 이름 (설정 화면 맨 아래에 표시, 비워도 돼요) */
 window.APP_MAKER = "";
@@ -408,7 +408,12 @@ if(!mById(prefs.me))prefs.me=(members()[0]||{}).id||'';
 /* ---------- 저장 · 가족 동기화 (Firebase) ---------- */
 const CFG=window.FIREBASE_CONFIG&&window.FIREBASE_CONFIG.apiKey?window.FIREBASE_CONFIG:(typeof firebaseConfig!=='undefined'&&firebaseConfig&&firebaseConfig.apiKey?firebaseConfig:null);
 const FB='https://www.gstatic.com/firebasejs/10.12.2/';
-let famOk=false,joinHash='',sheetLock=false;
+let fsMod=null,siteClaimed=null;
+async function loadFs(){if(fsMod)return fsMod;const appM=await import(FB+'firebase-app.js'),fsM=await import(FB+'firebase-firestore.js');const app=appM.getApps().length?appM.getApp():appM.initializeApp(CFG);fsMod={db:fsM.getFirestore(app),doc:fsM.doc,setDoc:fsM.setDoc,onSnapshot:fsM.onSnapshot,getDoc:fsM.getDoc};return fsMod}
+async function markFlag(M){try{await M.setDoc(M.doc(M.db,'site','flag'),{on:true})}catch(e){}prefs.flagged=true;savePrefs()}
+async function checkClaimed(){if(!CFG)return;try{const M=await loadFs();const d=await M.getDoc(M.doc(M.db,'site','flag'));siteClaimed=d.exists()}catch(e){siteClaimed=null}
+ if($('#modal').classList.contains('open')&&$('#start-new-tile'))showStart(true)}
+let lastFs=null,claimTried=false,famOk=false,joinHash='',sheetLock=false;
 let fs=null,famId=null,canWrite=true,syncState=CFG?(prefs.code?'wait':'nocode'):'nocfg',unsubs=[];
 const pending={},writing={},timers={};
 async function sha(t){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('')}
@@ -433,12 +438,11 @@ async function connect(){
  syncState='wait';safeRender();
  let M;
  try{
-  const appM=await import(FB+'firebase-app.js'),fsM=await import(FB+'firebase-firestore.js');
-  const app=appM.getApps().length?appM.getApp():appM.initializeApp(CFG);
-  M={db:fsM.getFirestore(app),doc:fsM.doc,setDoc:fsM.setDoc,onSnapshot:fsM.onSnapshot};
+  M=await loadFs();
   famId=await sha('dochak:'+prefs.code);
  }catch(e){syncState='fail';safeRender();return}
- fs=M;canWrite=true;famOk=false;
+ fs=M;lastFs=M;canWrite=true;famOk=false;
+ if(prefs.mayCreate&&!prefs.claimed){try{await M.setDoc(M.doc(M.db,'site','owner'),{fam:famId})}catch(e){}prefs.claimed=true;savePrefs()}
  const loadT=setTimeout(()=>{if(syncState==='wait'){syncState='slow';safeRender()}},10000);
  SECS.forEach(sec=>{
   unsubs.push(fs.onSnapshot(fs.doc(fs.db,'families',famId,'state',sec),snap=>{
@@ -450,7 +454,7 @@ async function connect(){
     }
     safeRender();return;
    }
-   if(sec==='config'&&!famOk){famOk=true;if(!prefs.mayCreate){prefs.mayCreate=true;savePrefs()}}
+   if(sec==='config'&&!famOk){famOk=true;if(!prefs.mayCreate){prefs.mayCreate=true;savePrefs()}if(!prefs.flagged)markFlag(fs)}
    if(snap.metadata.hasPendingWrites||pending[sec]||writing[sec])return;
    const d=snap.data()||{};
    const nv=norm(sec,JSON.parse(JSON.stringify(d.d||{})));
@@ -463,17 +467,28 @@ async function connect(){
 const RULES=`rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    match /site/owner {
+      allow create: if request.resource.data.keys().hasOnly(['fam'])
+        && request.resource.data.fam is string
+        && request.resource.data.fam.size() == 64;
+    }
+    match /site/flag {
+      allow get: if true;
+      allow create: if request.resource.data.keys().hasOnly(['on'])
+        && exists(/databases/$(database)/documents/site/owner);
+    }
     match /families/{fam}/state/{sec} {
-      allow get, write: if fam.size() == 64
-        && sec in ['config','status','events','msgs','daily','shop'];
+      allow get, write: if sec in ['config','status','events','msgs','daily','shop']
+        && fam == get(/databases/$(database)/documents/site/owner).data.fam;
     }
   }
 }`;
 function newCode(){const a='abcdefghjkmnpqrstuvwxyz23456789';let o='';const r=crypto.getRandomValues(new Uint8Array(12));r.forEach((x,i)=>{o+=a[x%a.length];if(i===3||i===7)o+='-'});return o}
 let denyBusy=false;
-function famDenied(){
+async function famDenied(){
  if(denyBusy)return;denyBusy=true;setTimeout(()=>denyBusy=false,3000);
  unsubs.forEach(u=>{try{u()}catch(e){}});unsubs=[];fs=null;SECS.forEach(k=>{pending[k]=false});
+ if(prefs.mayCreate&&!claimTried&&lastFs&&famId){claimTried=true;try{await lastFs.setDoc(lastFs.doc(lastFs.db,'site','owner'),{fam:famId});prefs.flagged=false;savePrefs();denyBusy=false;connect();return}catch(e){}}
  const wasCreate=prefs.mayCreate;prefs.code='';prefs.mayCreate=false;savePrefs();syncState='nocode';
  if(wasCreate){S=emptyState('우리집',[]);saveLocal()}
  safeRender();
@@ -505,9 +520,10 @@ function famMissing(){
  showJoin(bad,'그 코드로 만든 가족을 찾지 못했어요. 코드를 다시 확인해 주세요.');
 }
 function openSheet(html,lock){$('#sheet').innerHTML=html;sheetLock=!!lock;$('#modal').classList.add('open')}
-function showStart(){
+function showStart(again){
+ if(!again&&CFG)checkClaimed();
  openSheet(`<div style="text-align:center;padding:6px 0 4px"><div style="font-size:56px;line-height:1">🏡</div><h2 style="margin:10px 0 6px;font-size:34px">함께</h2><p class="dim" style="margin:0">가족이 언제 오는지, 오늘 무슨 일정이 있는지 한눈에</p></div>
- ${CFG?`<button class="tile" style="width:100%;margin-top:18px;min-height:88px" data-act="start-new"><span class="e">🏠</span>새 가족 만들기<span class="dim small" style="font-weight:500">우리 집에서 처음 쓰는 거라면</span></button>
+ ${CFG?(siteClaimed?`<div class="card" id="start-new-tile" style="margin-top:18px;text-align:center;background:var(--soft)"><b>🏠 이 사이트에는 이미 가족이 있어요</b><div class="dim small">새 가족은 만들 수 없어요. 가족에게 받은 코드나 초대 링크로 들어와 주세요.</div></div>`:`<button class="tile" id="start-new-tile" style="width:100%;margin-top:18px;min-height:88px" data-act="start-new"><span class="e">🏠</span>새 가족 만들기<span class="dim small" style="font-weight:500">우리 집에서 처음 쓰는 거라면</span></button>`)+`
  <button class="tile" style="width:100%;margin-top:10px;min-height:88px" data-act="start-join"><span class="e">🔑</span>초대받았어요<span class="dim small" style="font-weight:500">가족에게 받은 코드나 링크가 있다면</span></button>`:`<button class="tile" style="width:100%;margin-top:18px;min-height:88px" data-act="start-new"><span class="e">🏠</span>우리 가족 설정하기<span class="dim small" style="font-weight:500">이 기기에만 저장돼요</span></button>`}
  <div class="row2" style="margin-top:12px"><button class="btn ghost" data-act="start-demo">👀 예시로 구경하기</button><button class="btn ghost" data-act="start-local">이 기기에서만 쓰기</button></div>`,true);
 }
@@ -798,7 +814,7 @@ function vSetup(){
  <h2>가족 연결</h2><div class="card">
  <div class="sw"><span>상태</span><span class="${syncState==='on'?'':'warn'}" style="font-size:15px">${syncTxt[syncState]}</span></div>
  ${CFG&&prefs.code?`<div class="sw"><span>가족 코드</span><span>${showCode?esc(prefs.code):'••••-••••-••••'}</span></div>
- <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn pri" data-act="invite-copy">💌 초대 링크 복사</button><button class="btn" data-act="code-show">${showCode?'코드 숨기기':'코드 보기'}</button><button class="btn" data-act="lock-open">🔒 우리 가족만 쓰게 잠그기</button><button class="btn ghost" data-act="code-forget">이 기기 연결 끊기</button></div>
+ <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn pri" data-act="invite-copy">💌 초대 링크 복사</button><button class="btn" data-act="code-show">${showCode?'코드 숨기기':'코드 보기'}</button><button class="btn ghost" data-act="code-forget">이 기기 연결 끊기</button></div>
  <input id="inv-out" readonly style="display:none;margin-top:10px">
 `:''}
  ${CFG&&!prefs.code?`<p style="margin:10px 0 0">아직 가족과 연결되지 않아 이 기기에만 저장되고 있어요.</p><button class="btn pri" style="margin-top:10px" data-act="start-open">가족 만들기 · 초대 코드 넣기</button>`:''}
@@ -972,7 +988,7 @@ function go(v){view=v;try{history.replaceState(null,'','#'+v)}catch(e){location.
 function syncSt(){const g=id=>{const e=$('#'+id);return e?e.value:null};const a=g('st-eta'),b=g('st-note'),c=g('st-custom');if(a!==null)st.eta=a;if(b!==null)st.note=b;if(c!==null)st.custom=c}
 const A={
  tab:t=>go(t.dataset.v),
- 'start-new':()=>{wz=null;showWizard()},
+ 'start-new':()=>{if(CFG&&siteClaimed){toast('이 사이트에는 이미 가족이 있어요');showJoin('');return}wz=null;showWizard()},
  'start-join':()=>showJoin(joinHash||''),
  'start-demo':()=>{S=seed();SECS.forEach(k=>S[k]=norm(k,S[k]));prefs.localOnly=true;prefs.code='';prefs.me='m1';savePrefs();saveLocal();closeSheet();render();toast('예시 가족이에요. 설정에서 우리 가족을 만들 수 있어요')},
  'start-local':()=>{prefs.localOnly=true;savePrefs();closeSheet();if(!members().length){wz=null;showWizard();wz.local=true}},
@@ -984,7 +1000,7 @@ const A={
   if(!mem.length)return toast('가족을 한 명 이상 넣어 주세요');
   const meId=(wz.members[wz.me]&&wz.members[wz.me].name.trim())?wz.members[wz.me].id:mem[0].id;
   S=emptyState(wz.home.trim()||'우리집',mem);prefs.me=meId;
-  const loc=!CFG||wz.local;if(!loc){prefs.code=newCode();prefs.mayCreate=true;prefs.localOnly=false}else prefs.localOnly=true;
+  const loc=!CFG||wz.local;if(!loc){prefs.code=newCode();prefs.mayCreate=true;prefs.claimed=false;prefs.localOnly=false}else prefs.localOnly=true;
   savePrefs();saveLocal();sheetLock=false;closeSheet();render();
   if(!loc){connect();toast('가족을 만들었어요! 설정에서 초대 링크를 보내 보세요')}else toast('준비됐어요')},
  'join-back':()=>showStart(),
@@ -996,7 +1012,7 @@ const A={
  'gate-ok':()=>{const v=(($('#gate-code')||{}).value||'').trim();if(v.length<8)return toast('8글자 이상으로 넣어 주세요');prefs.code=v;savePrefs();closeSheet();toast('가족 도착판에 연결해요');connect()},
  'code-show':()=>{showCode=!showCode;render()},
  'code-change':()=>showGate(),
- 'code-forget':t=>{if(delArm!=='code'){delArm='code';t.textContent='정말 끊을까요?';t.classList.add('warn');return}delArm=null;prefs.code='';prefs.mayCreate=false;prefs.localOnly=false;savePrefs();S=emptyState('우리집',[]);saveLocal();unsubs.forEach(u=>{try{u()}catch(e){}});unsubs=[];fs=null;syncState='nocode';render();showStart()},
+ 'code-forget':t=>{if(delArm!=='code'){delArm='code';t.textContent='정말 끊을까요?';t.classList.add('warn');return}delArm=null;prefs.code='';prefs.mayCreate=false;prefs.claimed=false;prefs.localOnly=false;savePrefs();S=emptyState('우리집',[]);saveLocal();unsubs.forEach(u=>{try{u()}catch(e){}});unsubs=[];fs=null;syncState='nocode';render();showStart()},
  'rules-copy':async()=>{try{await navigator.clipboard.writeText(RULES);toast('규칙을 복사했어요')}catch(e){$('#rules-out').select();toast('글자를 길게 눌러 복사해 주세요')}},
  'bk-file':()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S)],{type:'application/json'}));a.download='함께-백업-'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)},
 
