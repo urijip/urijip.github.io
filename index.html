@@ -16,12 +16,12 @@
    Firebase 웹 앱 등록 후 나오는 firebaseConfig 의 { } 안 내용으로
    아래 빈 따옴표 줄들을 바꿔 넣고 저장하세요.                    */
 window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyCi86X4a47mVlJpoLCzp6LXq0BUBR5Ri48",
-  authDomain: "dochak-8e54d.firebaseapp.com",
-  projectId: "dochak-8e54d",
-  storageBucket: "dochak-8e54d.firebasestorage.app",
-  messagingSenderId: "679075396806",
-  appId: "1:679075396806:web:2e3621c707d0a1c9baebc7",
+  apiKey: "",
+  authDomain: "",
+  projectId: "",
+  storageBucket: "",
+  messagingSenderId: "",
+  appId: ""
 };
 /* 만든 사람 이름 (설정 화면 맨 아래에 표시, 비워도 돼요) */
 window.APP_MAKER = "";
@@ -206,6 +206,9 @@ textarea{min-height:100px;resize:vertical}
 .warn{color:var(--late);font-size:13px;font-weight:700}
 .dd{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
 .dd .card{padding:12px 16px}
+.ddc{border:0;text-align:left;font:inherit;color:inherit;cursor:pointer;position:relative;width:100%;transition:transform .15s}
+.ddc:hover{transform:translateY(-2px)}
+.ddedit{position:absolute;top:10px;right:12px;font-size:12px;color:var(--mute);font-weight:700}
 .dd .n{font-family:Jua,sans-serif;font-size:30px;color:var(--brand);line-height:1.1}
 @media(max-width:600px){.ev{grid-template-columns:82px minmax(0,1fr)}.ev .t{font-size:17px}.ev .bt{grid-column:1/-1;justify-content:flex-start}.week{grid-template-columns:repeat(7,minmax(0,1fr))}.week .arrow{display:none}}
 
@@ -219,7 +222,10 @@ textarea{min-height:100px;resize:vertical}
 .md.out{opacity:.38}
 .md.today{box-shadow:inset 0 0 0 2px var(--brand)}
 .md.sel{box-shadow:inset 0 0 0 3px var(--ink)}
-.md .n{font-weight:700;font-size:15px}
+.md .n{font-weight:700;font-size:15px;display:flex;justify-content:space-between;align-items:baseline;gap:2px}
+.md .lu{font-size:11px;font-weight:500;color:var(--mute)}
+.md .lu.l1{color:var(--brand);font-weight:700}
+@media(max-width:600px){.md .lu{display:none}.md .lu.l1{display:inline;font-size:9px}}
 .md .c{font-size:12px;background:var(--soft);border-radius:6px;padding:1px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.5}
 .md .more{font-size:11px;color:var(--mute)}
 @media(max-width:600px){.md{min-height:60px;padding:4px}.md .c{background:none;padding:0;font-size:15px;line-height:1.1}.md .c .ct,.md .more{display:none}}
@@ -337,6 +343,11 @@ const dur=m=>{m=Math.abs(Math.round(m));const h=Math.floor(m/60),r=m%60;return (
 const ago=ts=>{if(!ts)return '';const s=(Date.now()-ts)/60000;if(s<1)return '방금';if(s<60)return Math.floor(s)+'분 전';if(s<1440)return Math.floor(s/60)+'시간 전';return Math.floor(s/1440)+'일 전'};
 const jo=(w,a,b)=>{w=String(w);const c=w.charCodeAt(w.length-1);if(c<0xAC00||c>0xD7A3)return w+b;return w+((c-0xAC00)%28?a:b)};
 const dayLabel=d=>{const x=parseD(d);return (x.getMonth()+1)+'월 '+x.getDate()+'일 ('+DOW[x.getDay()]+')'};
+const LUF=(()=>{try{return new Intl.DateTimeFormat('ko-KR-u-ca-chinese',{month:'numeric',day:'numeric',timeZone:'Asia/Seoul'})}catch(e){return null}})();
+const LUC=new Map();
+function lunar(d){if(!LUF)return null;let v=LUC.get(d);if(v!==undefined)return v;try{const p=LUF.formatToParts(new Date(d+'T12:00:00+09:00'));const mo=(p.find(x=>x.type==='month')||{}).value||'',da=(p.find(x=>x.type==='day')||{}).value||'';const leap=mo.indexOf('윤')===0;v={m:parseInt(mo.replace(/\D/g,''),10),d:parseInt(da,10),leap};if(!v.m||!v.d)v=null}catch(e){v=null}LUC.set(d,v);return v}
+const luTxt=d=>{const l=lunar(d);return l?(l.leap?'윤':'')+l.m+'.'+l.d:''};
+const luLong=d=>{const l=lunar(d);return l?'음력 '+(l.leap?'윤':'')+l.m+'월 '+l.d+'일':''};
 const diffDays=(a,b)=>Math.round((parseD(b)-parseD(a))/864e5);
 
 const CATS=[['school','🏫','학교·유치원'],['academy','🎒','학원'],['show','🎭','공연·발표회'],['sports','🏃','운동'],['bday','🎂','생일'],['anniv','💍','기념일'],['trip','✈️','여행'],['hospital','🏥','병원'],['meet','🎉','모임'],['meal','🍽️','식사'],['work','💼','일'],['etc','📌','기타']];
@@ -575,7 +586,7 @@ function occurs(ev,d){
  if(d<ev.date)return false;
  if(ev.skip&&ev.skip.includes(d))return false;
  if(ev.repeat==='weekly'){if(ev.until&&d>ev.until)return false;return (ev.days||[]).includes(parseD(d).getDay())}
- if(ev.repeat==='yearly')return ev.date.slice(5)===d.slice(5);
+ if(ev.repeat==='yearly'){if(ev.lunar){const a=lunar(ev.date),b=lunar(d);return !!(a&&b&&a.m===b.m&&a.d===b.d&&!b.leap)}return ev.date.slice(5)===d.slice(5)}
  return ev.date===d;
 }
 const eventsOn=d=>S.events.list.filter(ev=>occurs(ev,d)).sort((a,b)=>(a.start||'').localeCompare(b.start||''));
@@ -595,6 +606,7 @@ function conflicts(d){
 }
 function nextOcc(ev){
  const T=today();
+ if(ev.repeat==='yearly'&&ev.lunar){for(let i=0;i<400;i++){const d=addDays(T,i);if(occurs(ev,d))return d}return null}
  if(ev.repeat==='yearly'){const y=new Date().getFullYear();let d=y+ev.date.slice(4);if(d<T)d=(y+1)+ev.date.slice(4);return d}
  if(ev.repeat==='weekly'){for(let i=0;i<8;i++){const d=addDays(T,i);if(occurs(ev,d))return d}return null}
  return ev.date>=T?ev.date:null;
@@ -641,7 +653,7 @@ const syncTxt={local:'이 기기에만 저장 중',nocfg:'동기화 설정 전 �
 function topHTML(){
  const d=new Date();
  return `<div class="toprow"><div><div class="sub">${esc(S.config.home)} · 가족 귀가·일정 알림판</div><div class="ttl"><h1>함께${curSeason()?`<span class="sdeco">${SEASONS[curSeason()].e}</span>`:''}</h1><button class="sync ${syncState==='on'?'on':''}" data-act="tab" data-v="setup" style="border:0;color:var(--onb);cursor:pointer"><i></i>${syncTxt[syncState]}</button></div></div>
- <div class="clockbox"><div><div class="sub">${d.getMonth()+1}월 ${d.getDate()}일 ${DOW[d.getDay()]}요일 · <span class="js-ap">${ampm()}</span></div>${clockHTML()}</div>${boardWanted()&&menuOverride?'<button class="boardbtn" data-act="board-back">📺 보드 화면으로</button>':''}</div></div>${railHTML()}`;
+ <div class="clockbox"><div><div class="sub">${d.getMonth()+1}월 ${d.getDate()}일 ${DOW[d.getDay()]}요일 · ${luLong(today())} · <span class="js-ap">${ampm()}</span></div>${clockHTML()}</div>${boardWanted()&&menuOverride?'<button class="boardbtn" data-act="board-back">📺 보드 화면으로</button>':''}</div></div>${railHTML()}`;
 }
 function navHTML(){
  const u=unreadFor(prefs.me).length;
@@ -694,7 +706,7 @@ function vHome(){
  const sum=[
   ['🚗 오늘 데리러 가기',picks.length?picks.map(e=>`<span class="ln"><span class="tm">${e.end?koS(e.end):e.start?koS(e.start):''}</span>${esc((mById(e.pickup)||{}).name||'')} → ${esc(e.title)}</span>`).join(''):'<span class="dim">오늘은 없어요</span>'],
   ['👪 가족 일정',fam.length?fam.map(e=>`<span class="ln"><span class="tm">${e.start?koS(e.start):'종일'}</span>${catOf(e.cat)[1]} ${esc(e.title)}</span>`).join(''):'<span class="dim">남은 가족 일정 없음</span>'],
-  ['📆 다가오는 날',dd.length?dd.map(x=>`<span class="ln"><b style="display:inline;color:var(--brand);font-size:15px">${dLabel(x.n)}</b> ${esc(x.e.title)}</span>`).join(''):'<span class="dim">등록된 기념일 없음</span>'],
+  ['📆 다가오는 날',dd.length?dd.map(x=>`<span class="ln" data-act="ev-edit" data-id="${x.e.id}" style="cursor:pointer"><b style="display:inline;color:var(--brand);font-size:15px">${dLabel(x.n)}</b> ${esc(x.e.title)} <span class="dim small">✏️</span></span>`).join(''):'<span class="dim">등록된 기념일 없음</span>'],
   ['💌 새 메시지',u.length?u.slice(0,2).map(x=>`<span class="ln">${esc((mById(x.from)||{}).name||'')}: ${esc(x.e||'')} ${esc(x.text)}</span>`).join(''):'<span class="dim">새 소식 없음</span>']];
  return `<div class="homegrid"><div class="side"><section class="sum">${sum.map(s=>`<div class="card"><b>${s[0]}</b><div class="v">${s[1]}</div></div>`).join('')}</section></div><div class="mainc">
  <h2>도착 안내</h2><div class="arrs">${members().map(card).join('')||'<div class="card empty">아직 가족이 없어요. <button class="btn sm pri" data-act="start-open">가족 만들기</button></div>'}</div>
@@ -718,14 +730,14 @@ function vStatus(){
 }
 function evRow(e,d,conf){
  const c=catOf(e.cat),p=e.pickup&&mById(e.pickup),done=isDone(e,d);
- const rep=e.repeat==='weekly'?'매주 '+(e.days||[]).map(x=>DOW[x]).join(''):e.repeat==='yearly'?'매년':'';
+ const rep=e.repeat==='weekly'?'매주 '+(e.days||[]).map(x=>DOW[x]).join(''):e.repeat==='yearly'?(e.lunar?'매년 음력 '+luTxt(e.date):'매년'):'';
  return `<div class="ev ${done?'done':''}"><div class="t">${e.start?koS(e.start):'종일'}${e.end?`<small>~ ${koS(e.end)}</small>`:''}</div>
  <div><div class="ti">${c[1]} ${esc(e.title)}</div><div class="meta">${esc(whoLabel(e))}${p?` · 🚗 ${esc(jo(p.name,'이','가'))} 데리러 가요`:''}${rep?' · 🔁 '+rep:''}${e.memo?' · 📝 '+esc(e.memo):''}</div>${conf&&conf.has(e.id)?'<div class="warn">⚠️ 같은 사람의 일정과 시간이 겹쳐요</div>':''}</div>
  <div class="bt"><button class="ck ${done?'on':''}" data-act="ev-done" data-id="${e.id}" data-date="${d}" aria-label="완료">✓</button><button class="btn sm" data-act="ev-edit" data-id="${e.id}">고치기</button>${e.repeat!=='none'?`<button class="btn sm" data-act="ev-skip" data-id="${e.id}" data-date="${d}">이날만 빼기</button>`:''}<button class="btn sm ${delArm===e.id?'warn':''}" data-act="ev-del" data-id="${e.id}">${delArm===e.id?'정말 지울까요?':'지우기'}</button></div></div>`;
 }
 function dayList(d){
  const L=eventsOn(d),conf=conflicts(d);
- return `<div class="card"><div class="hd"><h2 style="margin:0">${dayLabel(d)}${d===today()?' · 오늘':''}</h2><button class="btn pri sm" data-act="ev-new" data-date="${d}">+ 이날 일정</button></div>
+ return `<div class="card"><div class="hd"><h2 style="margin:0">${dayLabel(d)}${d===today()?' · 오늘':''} <span class="dim" style="font-size:15px;font-family:'Noto Sans KR'">${luLong(d)}</span></h2><button class="btn pri sm" data-act="ev-new" data-date="${d}">+ 이날 일정</button></div>
  ${L.length?L.map(e=>evRow(e,d,conf)).join(''):'<div class="empty">일정이 없어요. 여유로운 하루!</div>'}</div>`;
 }
 function vPlan(){
@@ -736,7 +748,7 @@ function vPlan(){
  return `<div class="hd"><h2>일정</h2><div style="display:flex;gap:8px"><button class="btn" data-act="day" data-date="${T}">오늘</button><button class="btn pri" data-act="ev-new" data-date="${selDate}">+ 새 일정</button></div></div>
  <div class="week"><button class="arrow" data-act="week" data-n="-7" aria-label="지난주">‹</button>${wk}<button class="arrow" data-act="week" data-n="7" aria-label="다음 주">›</button></div>
  <div style="margin-top:12px">${dayList(selDate)}</div>
- <h2>다가오는 날</h2>${dd.length?`<div class="dd">${dd.slice(0,8).map(x=>`<div class="card"><div class="n">${dLabel(x.n)}</div><b>${catOf(x.e.cat)[1]} ${esc(x.e.title)}</b><div class="dim small">${dayLabel(x.d)}</div></div>`).join('')}</div>`:'<div class="card empty">일정을 넣을 때 ‘D-day로 세기’를 켜면 여기 나와요</div>'}
+ <h2>다가오는 날</h2>${dd.length?`<div class="dd">${dd.slice(0,8).map(x=>`<button class="card ddc" data-act="ev-edit" data-id="${x.e.id}" title="눌러서 고치기"><div class="n">${dLabel(x.n)}</div><b>${catOf(x.e.cat)[1]} ${esc(x.e.title)}</b><div class="dim small">${dayLabel(x.d)} · 음 ${luTxt(x.d)}${x.e.lunar?' (음력 기준)':''}</div><span class="ddedit">✏️ 고치기</span></button>`).join('')}</div>`:'<div class="card empty">일정을 넣을 때 ‘D-day로 세기’를 켜면 여기 나와요</div>'}
  <h2>매주 반복 일정</h2><div class="card">${reps.length?reps.map(e=>`<div class="ev"><div class="t">${e.start?koS(e.start):'종일'}</div><div><div class="ti">${catOf(e.cat)[1]} ${esc(e.title)}</div><div class="meta">${esc(whoLabel(e))} · 매주 ${(e.days||[]).map(x=>DOW[x]).join('·')}${e.pickup?' · 🚗 '+esc((mById(e.pickup)||{}).name||''):''}</div></div><div class="bt"><button class="btn sm" data-act="ev-edit" data-id="${e.id}">고치기</button></div></div>`).join(''):'<div class="empty">학원·운동처럼 매주 있는 일정을 넣어 보세요</div>'}</div>`;
 }
 function monthGrid(){
@@ -745,7 +757,7 @@ function monthGrid(){
  let h=DOW.split('').map(d=>`<div class="mw">${d}</div>`).join('');
  for(let i=0;i<cells;i++){
   const d=addDays(start,i),x=parseD(d),L=eventsOn(d),dw=x.getDay();
-  h+=`<button class="md ${x.getMonth()!==m?'out':''} ${d===T?'today':''} ${d===selDate?'sel':''}" data-act="mday" data-date="${d}"><span class="n ${dw===0?'sun':dw===6?'sat':''}">${x.getDate()}</span>${L.slice(0,3).map(e=>`<span class="c"><span class="ce">${catOf(e.cat)[1]}</span><span class="ct"> ${esc(e.title)}</span></span>`).join('')}${L.length>3?`<span class="more">+${L.length-3}</span>`:''}</button>`;
+  h+=`<button class="md ${x.getMonth()!==m?'out':''} ${d===T?'today':''} ${d===selDate?'sel':''}" data-act="mday" data-date="${d}"><span class="n ${dw===0?'sun':dw===6?'sat':''}">${x.getDate()}<span class="lu ${lunar(d)&&lunar(d).d===1?'l1':''}">${luTxt(d)}</span></span>${L.slice(0,3).map(e=>`<span class="c"><span class="ce">${catOf(e.cat)[1]}</span><span class="ct"> ${esc(e.title)}</span></span>`).join('')}${L.length>3?`<span class="more">+${L.length-3}</span>`:''}</button>`;
  }
  return `<div class="mhd"><h2>${y}년 ${m+1}월</h2><button class="arrow btn" data-act="mon" data-n="-1" aria-label="이전 달">‹</button><button class="btn" data-act="mon" data-n="0">이번 달</button><button class="arrow btn" data-act="mon" data-n="1" aria-label="다음 달">›</button></div><div class="mon">${h}</div>`;
 }
@@ -918,7 +930,7 @@ function boardHTML(){
  else if(bview==='month')body=`<div class="bpanel">${monthGrid()}<div style="margin-top:14px">${dayList(selDate)}</div></div>`;
  else body=members().map(brow).join('')||'<div class="bpanel empty">가족을 추가해 주세요</div>';
  return `<div class="bhead"><div><div class="sub" style="font-weight:700">${esc(S.config.home)}</div><div class="ttl"><h1>함께${curSeason()?`<span class="sdeco">${SEASONS[curSeason()].e}</span>`:''}</h1><span class="sync ${syncState==='on'?'on':''}" style="color:var(--onb)"><i></i>${syncState==='on'?'동기화 중':syncTxt[syncState]}</span></div></div>${railHTML()}
- <div class="bclock"><div class="sub">${d.getMonth()+1}월 ${d.getDate()}일 ${DOW[d.getDay()]}요일 · <span class="js-ap">${ampm()}</span></div>${clockHTML()}<div class="bbtns"><button class="boardbtn" data-act="board-fs">⛶ 전체 화면</button><button class="boardbtn" data-act="board-menu">☰ 전체 메뉴</button></div></div></div>
+ <div class="bclock"><div class="sub">${d.getMonth()+1}월 ${d.getDate()}일 ${DOW[d.getDay()]}요일 · ${luLong(today())} · <span class="js-ap">${ampm()}</span></div>${clockHTML()}<div class="bbtns"><button class="boardbtn" data-act="board-fs">⛶ 전체 화면</button><button class="boardbtn" data-act="board-menu">☰ 전체 메뉴</button></div></div></div>
  <div class="bbody">${body}</div>
  <div class="bdock">${[['arr','🛬 도착판'],['talk','💌 말하기'],['routine','⭐ 루틴 '+rDone[0]+'/'+rDone[1]],['month','📅 달력']].map(b=>`<button class="dbtn ${bview===b[0]?'on':''}" data-act="bview" data-v="${b[0]}">${b[1]}</button>`).join('')}
  <div class="wid"><b>👪 가족 일정</b><span>${fam.length?fam.map(e=>(e.start?koS(e.start)+' ':'')+catOf(e.cat)[1]+' '+esc(e.title)).join(' · '):'남은 일정 없음'}</span></div>
@@ -972,7 +984,8 @@ function renderSheet(){
  <label class="l">누구 일정?</label><div class="chips"><button class="chip ${isAll(e)?'on':''}" data-act="d-all">👪 가족 모두</button>${members().map(m=>`<button class="chip ${e.who.includes(m.id)?'on':''}" data-act="d-who" data-id="${m.id}">${esc(m.emoji+' '+m.name)}</button>`).join('')}</div>
  <div class="row3"><div><label class="l" for="ev-date">날짜</label><input type="date" id="ev-date" value="${esc(e.date)}"></div><div><label class="l" for="ev-start">시작</label><input type="time" id="ev-start" value="${esc(e.start)}"></div><div><label class="l" for="ev-end">끝</label><input type="time" id="ev-end" value="${esc(e.end)}"></div></div>
  <p class="dim small" style="margin:4px 0 0">시간을 비우면 하루 종일 일정이에요.</p>
- <label class="l">반복</label><div class="chips">${[['none','한 번'],['weekly','매주'],['yearly','매년']].map(r=>`<button class="chip ${e.repeat===r[0]?'on':''}" data-act="d-rep" data-v="${r[0]}">${r[1]}</button>`).join('')}</div>
+ <label class="l">반복</label><div class="chips">${[['none','한 번'],['weekly','매주'],['yearly','매년']].map(r=>`<button class="chip ${e.repeat===r[0]?'on':''}" data-act="d-rep" data-v="${r[0]}">${r[1]}</button>`).join('')}${e.repeat==='yearly'?`<button class="chip ${e.lunar?'on':''}" data-act="d-lunar">🌙 음력으로</button>`:''}</div>
+ <p class="dim small" style="margin:6px 0 0">${esc(dayLabel(e.date))} = ${luLong(e.date)}${e.repeat==='yearly'&&e.lunar?' · 매년 음력 '+luTxt(e.date)+'에 돌아와요':''}</p>
  ${e.repeat==='weekly'?`<div class="chips" style="margin-top:8px">${DOW.split('').map((d,i)=>`<button class="chip ${(e.days||[]).includes(i)?'on':''}" data-act="d-day" data-d="${i}" style="min-width:48px;justify-content:center">${d}</button>`).join('')}</div><label class="l" for="ev-until">언제까지 (선택)</label><input type="date" id="ev-until" value="${esc(e.until||'')}">`:''}
  <label class="l" for="ev-pick">🚗 데리러 가는 사람 (선택)</label><select id="ev-pick"><option value="">없음</option>${members().map(m=>`<option value="${m.id}" ${e.pickup===m.id?'selected':''}>${esc(m.emoji+' '+m.name)}</option>`).join('')}</select>
  <label class="l" for="ev-memo">메모·준비물 (선택)</label><input id="ev-memo" maxlength="40" value="${esc(e.memo)}" placeholder="예: 체육복 챙기기">
@@ -1042,10 +1055,11 @@ const A={
  'd-who':t=>{syncDraft();const id=t.dataset.id;draft.who=draft.who.includes(id)?draft.who.filter(x=>x!==id):draft.who.concat(id);renderSheet()},
  'd-rep':t=>{syncDraft();draft.repeat=t.dataset.v;if(draft.repeat==='weekly'&&!(draft.days||[]).length)draft.days=[parseD(draft.date).getDay()];renderSheet()},
  'd-day':t=>{syncDraft();const d=+t.dataset.d;draft.days=draft.days.includes(d)?draft.days.filter(x=>x!==d):draft.days.concat(d).sort();renderSheet()},
+ 'd-lunar':()=>{syncDraft();draft.lunar=!draft.lunar;renderSheet()},
  'd-close':closeSheet,
  'd-save':()=>{syncDraft();const e=draft;if(!e.title)return toast('일정 이름을 써 주세요');if(e.repeat==='weekly'&&!e.days.length)return toast('요일을 골라 주세요');
   if(e.start&&e.end&&e.end<=e.start)return toast('끝나는 시간이 시작보다 늦어야 해요');
-  const isNew=e.isNew;delete e.isNew;delete e.sample;
+  const isNew=e.isNew;delete e.isNew;delete e.sample;if(e.repeat!=='yearly')delete e.lunar;
   const i=S.events.list.findIndex(x=>x.id===e.id);if(i>=0)S.events.list[i]=e;else S.events.list.push(e);
   selDate=occurs(e,selDate)?selDate:e.date;closeSheet();save('events');
   const c=conflicts(e.date);toast(c.has(e.id)?'저장했어요 · ⚠️ 시간이 겹치는 일정이 있어요':isNew?'일정을 넣었어요':'고쳤어요')},
@@ -1124,6 +1138,7 @@ document.addEventListener('click',ev=>{
  const f=A[a];if(f)f(t,ev);
 });
 document.addEventListener('change',ev=>{
+ if(ev.target.id==='ev-date'&&draft){syncDraft();renderSheet();return}
  const t=ev.target,k=t.dataset&&t.dataset.set;if(!k)return;
  const m=t.dataset.id&&mById(t.dataset.id);
  if(k==='home'){S.config.home=t.value.trim()||'우리집';save('config')}
