@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>우리집 도착판</title>
+<title>함께 · 가족 일정판</title>
 <meta name="theme-color" content="#ff6a4d">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="도착판">
+<meta name="apple-mobile-web-app-title" content="함께">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -16,13 +16,15 @@
    Firebase 웹 앱 등록 후 나오는 firebaseConfig 의 { } 안 내용으로
    아래 빈 따옴표 줄들을 바꿔 넣고 저장하세요.                    */
 window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyCi86X4a47mVlJpoLCzp6LXq0BUBR5Ri48",
-  authDomain: "dochak-8e54d.firebaseapp.com",
-  projectId: "dochak-8e54d",
-  storageBucket: "dochak-8e54d.firebasestorage.app",
-  messagingSenderId: "679075396806",
-  appId: "1:679075396806:web:2e3621c707d0a1c9baebc7",
+  apiKey: "",
+  authDomain: "",
+  projectId: "",
+  storageBucket: "",
+  messagingSenderId: "",
+  appId: ""
 };
+/* 만든 사람 이름 (설정 화면 맨 아래에 표시, 비워도 돼요) */
+window.APP_MAKER = "";
 /* ============================================================ */
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -46,6 +48,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 /* 위 띠 */
 .top{background:var(--brand);color:#fff;padding:18px max(4vw,16px) 16px}
 .toprow{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px 20px;max-width:1100px;margin:0 auto}
+.ttl{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.ttl .sync{margin-top:0}
 .top h1{font-family:Jua,sans-serif;font-weight:400;font-size:clamp(30px,6vw,44px);line-height:1.05;margin:0;text-wrap:balance}
 .top .sub{font-size:14px;opacity:.92;font-weight:500}
 .clockbox{text-align:right;display:flex;align-items:center;gap:12px}
@@ -73,7 +76,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 /* 탭 */
 .nav{display:flex;gap:6px;overflow-x:auto;padding:10px max(4vw,16px);position:sticky;top:0;background:var(--bg);z-index:5;scrollbar-width:none}
 .nav::-webkit-scrollbar{display:none}
-.navin{display:flex;gap:6px;max-width:1100px;margin:0 auto;width:100%}
+.navin{display:flex;gap:6px;margin:0 auto;width:max-content}
 .tab{flex:none;min-height:44px;padding:0 16px;border-radius:999px;border:0;background:var(--soft);font-weight:700;font-size:15px;position:relative}
 .tab.on{background:var(--ink);color:var(--bg)}
 .badge{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:var(--late);color:#fff;font-size:12px;margin-left:4px}
@@ -95,10 +98,12 @@ h2{font-family:Jua,sans-serif;font-weight:400;font-size:24px;line-height:1.2;mar
 .empty{padding:22px 8px;text-align:center;color:var(--mute)}
 
 /* 요약 줄 */
-.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:14px}
+.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:10px;margin-top:14px}
 .sum .card{padding:12px 16px}
 .sum b{display:block;font-size:13px;color:var(--mute);font-weight:700}
-.sum .v{font-weight:700;font-size:16px;line-height:1.4}
+.sum .v{font-weight:700;font-size:16px;line-height:1.5}
+.sum .ln{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sum .ln .tm{color:var(--teal);margin-right:6px}
 
 /* 도착 카드 */
 .arrs{display:grid;gap:12px}
@@ -359,7 +364,12 @@ let prefs={me:'',voice:true,night:true};
 try{Object.assign(prefs,JSON.parse(localStorage.getItem(PKEY)||'{}'))}catch(e){}
 const savePrefs=()=>{try{localStorage.setItem(PKEY,JSON.stringify(prefs))}catch(e){}};
 
-let S=loadLocal()||seed();
+const FACES=['👩','👨','👧','👦','👵','👴','👶','🧒','🧑','🐶','🐱','🐰'];
+const KID_RT=()=>[{id:'r'+uid(),e:'🪥',t:'양치하기'},{id:'r'+uid(),e:'🎒',t:'책가방 챙기기'},{id:'r'+uid(),e:'✏️',t:'숙제하기'},{id:'r'+uid(),e:'🧮',t:'주산 연습'},{id:'r'+uid(),e:'🌙',t:'잠옷 입기'}];
+const COLORS=['#ff9f6e','#5bb8f0','#f27aa8','#6cc58a','#ffb74d','#9575cd','#4db6ac','#e57373'];
+function emptyState(home,mem){const routines={};mem.filter(m=>m.kid).forEach(m=>routines[m.id]=KID_RT());return {config:{home:home||'우리집',members:mem,routines},status:{},events:{list:[],done:{}},msgs:{list:[]},daily:{log:{}},shop:{list:[]}}}
+const firstRun=!loadLocal();
+let S=loadLocal()||emptyState('우리집',[]);
 SECS.forEach(k=>S[k]=norm(k,S[k]));
 
 const members=()=>S.config.members;
@@ -371,6 +381,7 @@ if(!mById(prefs.me))prefs.me=(members()[0]||{}).id||'';
 /* ---------- 저장 · 가족 동기화 (Firebase) ---------- */
 const CFG=window.FIREBASE_CONFIG&&window.FIREBASE_CONFIG.apiKey?window.FIREBASE_CONFIG:(typeof firebaseConfig!=='undefined'&&firebaseConfig&&firebaseConfig.apiKey?firebaseConfig:null);
 const FB='https://www.gstatic.com/firebasejs/10.12.2/';
+let famOk=false,joinHash='',sheetLock=false;
 let fs=null,famId=null,canWrite=true,syncState=CFG?(prefs.code?'wait':'nocode'):'nocfg',unsubs=[];
 const pending={},writing={},timers={};
 async function sha(t){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('')}
@@ -391,7 +402,7 @@ async function flush(sec){
 async function connect(){
  unsubs.forEach(u=>{try{u()}catch(e){}});unsubs=[];fs=null;
  if(!CFG){syncState='nocfg';safeRender();return}
- if(!prefs.code){syncState='nocode';safeRender();showGate();return}
+ if(!prefs.code){syncState=prefs.localOnly?'local':'nocode';safeRender();if(!prefs.localOnly||joinHash)showStart();return}
  syncState='wait';safeRender();
  let M;
  try{
@@ -400,15 +411,19 @@ async function connect(){
   M={db:fsM.getFirestore(app),doc:fsM.doc,setDoc:fsM.setDoc,onSnapshot:fsM.onSnapshot};
   famId=await sha('dochak:'+prefs.code);
  }catch(e){syncState='fail';safeRender();return}
- fs=M;canWrite=true;
+ fs=M;canWrite=true;famOk=false;
  const loadT=setTimeout(()=>{if(syncState==='wait'){syncState='slow';safeRender()}},10000);
  SECS.forEach(sec=>{
   unsubs.push(fs.onSnapshot(fs.doc(fs.db,'families',famId,'state',sec),snap=>{
    if(!snap.metadata.fromCache){clearTimeout(loadT);if(syncState==='wait'||syncState==='slow')syncState='on'}
    if(!snap.exists()){
-    if(!snap.metadata.fromCache&&canWrite){pending[sec]=true;flush(sec)}
+    if(!snap.metadata.fromCache&&canWrite){
+     if(sec==='config'&&!prefs.mayCreate){famMissing();return}
+     if(sec==='config'||prefs.mayCreate||famOk){pending[sec]=true;flush(sec)}
+    }
     safeRender();return;
    }
+   if(sec==='config'&&!famOk){famOk=true;if(!prefs.mayCreate){prefs.mayCreate=true;savePrefs()}}
    if(snap.metadata.hasPendingWrites||pending[sec]||writing[sec])return;
    const d=snap.data()||{};
    const nv=norm(sec,JSON.parse(JSON.stringify(d.d||{})));
@@ -428,15 +443,38 @@ service cloud.firestore {
   }
 }`;
 function newCode(){const a='abcdefghjkmnpqrstuvwxyz23456789';let o='';const r=crypto.getRandomValues(new Uint8Array(12));r.forEach((x,i)=>{o+=a[x%a.length];if(i===3||i===7)o+='-'});return o}
-function showGate(){
- $('#sheet').innerHTML=`<h2>👪 가족 비밀코드</h2>
- <p style="margin-top:0">가족 모두 <b>같은 코드</b>를 넣어야 같은 도착판을 봐요. 코드를 아는 기기만 들어올 수 있어요.</p>
- <label class="l" for="gate-code">비밀코드 (8글자 이상)</label><input id="gate-code" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="40" value="${esc(prefs.code||'')}" placeholder="예: k7mp-q2tz-h9wa">
- <div class="row2" style="margin-top:10px"><button class="btn" data-act="gate-new">🎲 새 코드 만들기</button><button class="btn pri" data-act="gate-ok">들어가기</button></div>
- <p class="dim small">처음 쓰는 집이면 ‘새 코드 만들기’를 누르고, 그 코드를 가족에게만 알려 주세요. 이미 가족이 쓰고 있으면 받은 코드를 그대로 넣으세요. 남이 짐작하기 쉬운 생일·전화번호는 피해 주세요.</p>
- <button class="btn ghost" style="width:100%;margin-top:6px" data-act="d-close">나중에 · 이 기기에서만 쓰기</button>`;
- $('#modal').classList.add('open');
+function famMissing(){
+ unsubs.forEach(u=>{try{u()}catch(e){}});unsubs=[];fs=null;
+ const bad=prefs.code;prefs.code='';savePrefs();syncState='nocode';safeRender();
+ showJoin(bad,'그 코드로 만든 가족을 찾지 못했어요. 코드를 다시 확인해 주세요.');
 }
+function openSheet(html,lock){$('#sheet').innerHTML=html;sheetLock=!!lock;$('#modal').classList.add('open')}
+function showStart(){
+ openSheet(`<div style="text-align:center;padding:6px 0 4px"><div style="font-size:56px;line-height:1">🏡</div><h2 style="margin:10px 0 6px;font-size:34px">함께</h2><p class="dim" style="margin:0">가족이 언제 오는지, 오늘 무슨 일정이 있는지 한눈에</p></div>
+ ${CFG?`<button class="tile" style="width:100%;margin-top:18px;min-height:88px" data-act="start-new"><span class="e">🏠</span>새 가족 만들기<span class="dim small" style="font-weight:500">우리 집에서 처음 쓰는 거라면</span></button>
+ <button class="tile" style="width:100%;margin-top:10px;min-height:88px" data-act="start-join"><span class="e">🔑</span>초대받았어요<span class="dim small" style="font-weight:500">가족에게 받은 코드나 링크가 있다면</span></button>`:`<button class="tile" style="width:100%;margin-top:18px;min-height:88px" data-act="start-new"><span class="e">🏠</span>우리 가족 설정하기<span class="dim small" style="font-weight:500">이 기기에만 저장돼요</span></button>`}
+ <div class="row2" style="margin-top:12px"><button class="btn ghost" data-act="start-demo">👀 예시로 구경하기</button><button class="btn ghost" data-act="start-local">이 기기에서만 쓰기</button></div>`,true);
+}
+let wz=null;
+function showWizard(){
+ if(!wz)wz={home:'',me:0,members:[{id:'m'+uid(),emoji:'👩',name:'엄마',kid:false},{id:'m'+uid(),emoji:'👨',name:'아빠',kid:false},{id:'m'+uid(),emoji:'👧',name:'첫째',kid:true}]};
+ openSheet(`<h2>🏠 새 가족 만들기</h2>
+ <label class="l" for="wz-home">집 이름</label><input id="wz-home" maxlength="16" placeholder="예: 서윤이네" value="${esc(wz.home)}">
+ <label class="l">가족 구성원 <span class="dim small" style="font-weight:500">얼굴을 누르면 바뀌어요 · 아이는 ‘아이’에 체크</span></label>
+ ${wz.members.map((m,i)=>`<div class="mrow"><button class="btn" style="font-size:26px;min-width:58px" data-act="wz-face" data-i="${i}" aria-label="얼굴 바꾸기">${esc(m.emoji)}</button><input class="nmi wz-name" data-i="${i}" maxlength="10" value="${esc(m.name)}" aria-label="이름"><label><input type="checkbox" class="wz-kid" data-i="${i}" ${m.kid?'checked':''}>아이</label>${wz.members.length>1?`<button class="btn sm ghost" data-act="wz-del" data-i="${i}">빼기</button>`:''}</div>`).join('')}
+ <button class="btn sm" style="margin-top:10px" data-act="wz-add">+ 가족 추가</button>
+ <label class="l" for="wz-me">이 기기를 쓰는 사람</label><select id="wz-me">${wz.members.map((m,i)=>`<option value="${i}" ${wz.me===i?'selected':''}>${esc(m.emoji+' '+m.name)}</option>`).join('')}</select>
+ <div class="row2" style="margin-top:18px"><button class="btn" data-act="wz-back">뒤로</button><button class="btn pri" data-act="wz-go">시작하기</button></div>
+ ${CFG?'<p class="dim small">시작하면 우리 가족 코드가 만들어져요. 설정의 ‘초대 링크 복사’로 가족을 불러 주세요.</p>':''}`,true);
+}
+function syncWz(){if(!wz)return;const h=$('#wz-home');if(h)wz.home=h.value;document.querySelectorAll('.wz-name').forEach(e=>{wz.members[+e.dataset.i].name=e.value});document.querySelectorAll('.wz-kid').forEach(e=>{wz.members[+e.dataset.i].kid=e.checked});const me=$('#wz-me');if(me)wz.me=Math.min(+me.value,wz.members.length-1)}
+function showJoin(code,msg){
+ openSheet(`<h2>🔑 초대받았어요</h2>${msg?`<p class="warn" style="font-size:15px">${esc(msg)}</p>`:'<p style="margin-top:0">가족에게 받은 <b>가족 코드</b>를 넣어 주세요. 초대 링크로 열었다면 이미 채워져 있어요.</p>'}
+ <label class="l" for="gate-code">가족 코드</label><input id="gate-code" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="40" value="${esc(code||'')}" placeholder="예: k7mp-q2tz-h9wa">
+ <div class="row2" style="margin-top:14px"><button class="btn" data-act="join-back">뒤로</button><button class="btn pri" data-act="join-go">들어가기</button></div>
+ <p class="dim small">들어가면 이 기기에 있던 내용 대신 가족의 도착판 내용이 보여요.</p>`,true);
+}
+function showGate(){showJoin(prefs.code)}
 
 /* ---------- 소리 · 음성 ---------- */
 let actx=null;
@@ -526,12 +564,12 @@ let st={who:prefs.me,i:null,eta:'',note:'',custom:''},talkTo='kids',delArm=null,
 const TABS=[['home','🛬 도착판'],['status','📍 내 상태'],['plan','🗓️ 일정'],['month','📅 달력'],['routine','⭐ 루틴'],['talk','💌 메시지'],['shop','🛒 장보기'],['setup','⚙️ 설정']];
 const unreadFor=id=>{const m=mById(id);if(!m)return [];return S.msgs.list.filter(x=>x.from!==id&&isFor(x,m)&&!(x.read||[]).includes(id))};
 function isFor(x,m){return x.to==='all'||(x.to==='parents'&&!m.kid)||(x.to==='kids'&&m.kid)||x.to===m.id}
-const syncTxt={nocfg:'동기화 설정 전 · 이 기기에만 저장',nocode:'가족 코드를 넣어 주세요',wait:'연결하는 중…',slow:'연결이 느려요 · 이 기기 내용 표시',on:'가족 실시간 동기화 중',denied:'저장 권한 없음 · 규칙 확인',fail:'연결 실패 · 인터넷과 설정값 확인'};
+const syncTxt={local:'이 기기에만 저장 중',nocfg:'동기화 설정 전 · 이 기기에만 저장',nocode:'가족 코드를 넣어 주세요',wait:'연결하는 중…',slow:'연결이 느려요 · 이 기기 내용 표시',on:'가족 실시간 동기화 중',denied:'저장 권한 없음 · 규칙 확인',fail:'연결 실패 · 인터넷과 설정값 확인'};
 
 function topHTML(){
  const d=new Date();
- return `<div class="toprow"><div><div class="sub">가족 귀가·일정 알림판</div><h1>${esc(S.config.home)} 도착판</h1><button class="sync ${syncState==='on'?'on':''}" data-act="tab" data-v="setup" style="border:0;color:#fff;cursor:pointer"><i></i>${syncTxt[syncState]}</button></div>
- <div class="clockbox"><div><div class="sub">${d.getMonth()+1}월 ${d.getDate()}일 ${DOW[d.getDay()]}요일 · <span class="js-ap">${ampm()}</span></div>${clockHTML()}</div><button class="boardbtn" data-act="board-open">📺 거실 보드</button></div></div>${railHTML()}`;
+ return `<div class="toprow"><div><div class="sub">${esc(S.config.home)} · 가족 귀가·일정 알림판</div><div class="ttl"><h1>함께</h1><button class="sync ${syncState==='on'?'on':''}" data-act="tab" data-v="setup" style="border:0;color:#fff;cursor:pointer"><i></i>${syncTxt[syncState]}</button></div></div>
+ <div class="clockbox"><div><div class="sub">${d.getMonth()+1}월 ${d.getDate()}일 ${DOW[d.getDay()]}요일 · <span class="js-ap">${ampm()}</span></div>${clockHTML()}</div>${boardWanted()&&menuOverride?'<button class="boardbtn" data-act="board-back">📺 보드 화면으로</button>':''}</div></div>${railHTML()}`;
 }
 function navHTML(){
  const u=unreadFor(prefs.me).length;
@@ -582,12 +620,12 @@ function vHome(){
  const dd=ddays().slice(0,2);
  const u=unreadFor(prefs.me);
  const sum=[
-  ['🚗 오늘 데리러 가기',picks.length?picks.map(e=>`${(mById(e.pickup)||{}).name} → ${esc(e.title)} ${e.end?koS(e.end):e.start?koS(e.start):''}`).join('<br>'):'<span class="dim">오늘은 없어요</span>'],
-  ['👪 가족 일정',fam.length?fam.map(e=>`${e.start?koS(e.start):'종일'} ${catOf(e.cat)[1]} ${esc(e.title)}`).join('<br>'):'<span class="dim">남은 가족 일정 없음</span>'],
-  ['📆 다가오는 날',dd.length?dd.map(x=>`<b style="display:inline;color:var(--brand);font-size:15px">${dLabel(x.n)}</b> ${esc(x.e.title)}`).join('<br>'):'<span class="dim">등록된 기념일 없음</span>'],
-  ['💌 새 메시지',u.length?u.slice(0,2).map(x=>`${esc((mById(x.from)||{}).name||'')}: ${esc(x.e||'')} ${esc(x.text)}`).join('<br>'):'<span class="dim">새 소식 없음</span>']];
+  ['🚗 오늘 데리러 가기',picks.length?picks.map(e=>`<span class="ln"><span class="tm">${e.end?koS(e.end):e.start?koS(e.start):''}</span>${esc((mById(e.pickup)||{}).name||'')} → ${esc(e.title)}</span>`).join(''):'<span class="dim">오늘은 없어요</span>'],
+  ['👪 가족 일정',fam.length?fam.map(e=>`<span class="ln"><span class="tm">${e.start?koS(e.start):'종일'}</span>${catOf(e.cat)[1]} ${esc(e.title)}</span>`).join(''):'<span class="dim">남은 가족 일정 없음</span>'],
+  ['📆 다가오는 날',dd.length?dd.map(x=>`<span class="ln"><b style="display:inline;color:var(--brand);font-size:15px">${dLabel(x.n)}</b> ${esc(x.e.title)}</span>`).join(''):'<span class="dim">등록된 기념일 없음</span>'],
+  ['💌 새 메시지',u.length?u.slice(0,2).map(x=>`<span class="ln">${esc((mById(x.from)||{}).name||'')}: ${esc(x.e||'')} ${esc(x.text)}</span>`).join(''):'<span class="dim">새 소식 없음</span>']];
  return `<section class="sum">${sum.map(s=>`<div class="card"><b>${s[0]}</b><div class="v">${s[1]}</div></div>`).join('')}</section>
- <h2>도착 안내</h2><div class="arrs">${members().map(card).join('')||'<div class="card empty">설정에서 가족을 추가해 주세요</div>'}</div>
+ <h2>도착 안내</h2><div class="arrs">${members().map(card).join('')||'<div class="card empty">아직 가족이 없어요. <button class="btn sm pri" data-act="start-open">가족 만들기</button></div>'}</div>
  <h2>오늘 하루 한눈에</h2>${timeline()}
  <p class="dim small">빨간 선은 지금, 🏠 동그라미는 집에 도착할 예정 시각이에요.</p>`;
 }
@@ -687,24 +725,27 @@ function vSetup(){
  return `<h2>우리 집</h2><div class="card"><label class="l" for="set-home">집 이름</label><input id="set-home" data-set="home" maxlength="16" value="${esc(S.config.home)}"></div>
  <h2>가족</h2><div class="card">${members().map(m=>`<div class="mrow"><input class="em" data-set="m-emoji" data-id="${m.id}" maxlength="4" value="${esc(m.emoji)}" aria-label="얼굴"><input class="nmi" data-set="m-name" data-id="${m.id}" maxlength="10" value="${esc(m.name)}" aria-label="이름"><input type="color" data-set="m-color" data-id="${m.id}" value="${esc(m.color)}" aria-label="색"><label><input type="checkbox" data-set="m-kid" data-id="${m.id}" ${m.kid?'checked':''}>아이</label><button class="btn sm ghost ${delArm===m.id?'warn':''}" data-act="m-del" data-id="${m.id}">${delArm===m.id?'정말?':'빼기'}</button></div>`).join('')}
  <button class="btn" style="margin-top:12px" data-act="m-add">+ 가족 추가</button></div>
- <h2>아이 루틴</h2>${kids().map(m=>`<div class="card" style="margin-bottom:10px"><b>${esc(m.emoji+' '+m.name)}</b>${(S.config.routines[m.id]||[]).map(r=>`<div class="mrow"><input class="em" data-set="r-e" data-id="${m.id}" data-r="${r.id}" maxlength="4" value="${esc(r.e)}" aria-label="그림"><input class="nmi" data-set="r-t" data-id="${m.id}" data-r="${r.id}" maxlength="20" value="${esc(r.t)}" aria-label="할 일"><button class="btn sm ghost" data-act="r-del" data-id="${m.id}" data-r="${r.id}">빼기</button></div>`).join('')}<button class="btn sm" style="margin-top:10px" data-act="r-add" data-id="${m.id}">+ 루틴 추가</button></div>`).join('')||'<div class="card empty">아이로 표시된 가족이 없어요</div>'}
+ <h2>아이 루틴</h2>${kids().map(m=>`<div class="card" style="margin-bottom:10px"><b>${esc(m.emoji+' '+m.name)}</b>${(S.config.routines[m.id]||[]).map(r=>`<div class="mrow"><button class="btn" style="font-size:26px;min-width:58px" data-act="rt-emo" data-id="${m.id}" data-r="${r.id}" aria-label="그림 바꾸기">${esc(r.e)}</button><input class="nmi" data-set="r-t" data-id="${m.id}" data-r="${r.id}" maxlength="20" value="${esc(r.t)}" aria-label="할 일"><button class="btn sm ghost" data-act="r-del" data-id="${m.id}" data-r="${r.id}">빼기</button></div>`).join('')}<button class="btn sm" style="margin-top:10px" data-act="r-add" data-id="${m.id}">+ 루틴 추가</button></div>`).join('')||'<div class="card empty">아이로 표시된 가족이 없어요</div>'}
  <h2>이 기기</h2><div class="card">
  <div class="sw"><span>이 기기를 쓰는 사람</span><select data-set="pref-me" style="width:auto">${members().map(m=>`<option value="${m.id}" ${prefs.me===m.id?'selected':''}>${esc(m.emoji+' '+m.name)}</option>`).join('')}</select></div>
  <div class="sw"><span>소리·음성 안내 (도착, 메시지, 픽업 10분 전)</span><input type="checkbox" data-set="pref-voice" ${prefs.voice?'checked':''}></div>
+ <div class="sw"><span>화면 모양</span><select data-set="pref-screen" style="width:auto"><option value="auto" ${(prefs.screen||'auto')==='auto'?'selected':''}>자동 (가로 큰 화면은 거실 보드)</option><option value="phone" ${prefs.screen==='phone'?'selected':''}>항상 휴대폰 화면</option><option value="board" ${prefs.screen==='board'?'selected':''}>항상 거실 보드</option></select></div>
  <div class="sw"><span>밤 9시~아침 6시 어두운 화면</span><input type="checkbox" data-set="pref-night" ${prefs.night?'checked':''}></div>
  <button class="btn" style="margin-top:12px" data-act="voice-test">🔊 음성 들어 보기</button>
 </div>
- <h2>가족 동기화</h2><div class="card">
+ <h2>가족 연결</h2><div class="card">
  <div class="sw"><span>상태</span><span class="${syncState==='on'?'':'warn'}" style="font-size:15px">${syncTxt[syncState]}</span></div>
- ${CFG?`<div class="sw"><span>가족 비밀코드</span><span>${prefs.code?(showCode?esc(prefs.code):'••••-••••-••••'):'없음'}</span></div>
- <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">${prefs.code?`<button class="btn" data-act="code-show">${showCode?'코드 숨기기':'코드 보기'}</button>`:''}<button class="btn" data-act="code-change">${prefs.code?'코드 바꾸기':'코드 넣기'}</button>${prefs.code?`<button class="btn ghost" data-act="code-forget">이 기기 연결 끊기</button>`:''}</div>
- <p class="dim small">새 기기에서는 주소를 열고 같은 코드를 넣으면 돼요. 휴대폰 브라우저 메뉴의 ‘홈 화면에 추가’를 누르면 앱처럼 열 수 있어요.</p>`:''}
+ ${CFG&&prefs.code?`<div class="sw"><span>가족 코드</span><span>${showCode?esc(prefs.code):'••••-••••-••••'}</span></div>
+ <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn pri" data-act="invite-copy">💌 초대 링크 복사</button><button class="btn" data-act="code-show">${showCode?'코드 숨기기':'코드 보기'}</button><button class="btn ghost" data-act="code-forget">이 기기 연결 끊기</button></div>
+ <input id="inv-out" readonly style="display:none;margin-top:10px">
+ <p class="dim small">초대 링크와 코드는 가족에게만 보내 주세요. 받은 가족이 링크를 누르면 바로 들어올 수 있어요.</p>`:''}
+ ${CFG&&!prefs.code?`<p style="margin:10px 0 0">아직 가족과 연결되지 않아 이 기기에만 저장되고 있어요.</p><button class="btn pri" style="margin-top:10px" data-act="start-open">가족 만들기 · 초대 코드 넣기</button>`:''}
  ${!CFG||syncState==='denied'?guideHTML():''}
  </div>
  <h2>백업</h2><div class="card"><label class="l" for="bk-out">지금 데이터 (복사해서 보관)</label><textarea id="bk-out" readonly>${esc(JSON.stringify(S))}</textarea><div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><button class="btn" data-act="bk-copy">복사하기</button><button class="btn" data-act="bk-file">백업 파일 내려받기</button></div>
  <label class="l" for="bk-in">백업 붙여넣어 되살리기</label><textarea id="bk-in" placeholder="복사해 둔 내용을 붙여 넣으세요"></textarea><button class="btn ${restoreArm?'warn':''}" style="margin-top:8px" data-act="bk-restore">${restoreArm?'지금 내용을 덮어써요. 한 번 더 누르기':'되살리기'}</button></div>
  ${hasSample?'<h2>예시 일정</h2><div class="card"><p style="margin-top:0">처음 화면을 보여 주려고 넣은 예시 일정이 있어요.</p><button class="btn" data-act="sample-del">예시 일정 지우기</button></div>':''}
- <p class="dim small" style="margin-top:24px">우리집 도착판 · 가족 일정·귀가 알림판</p>`;
+ <p class="dim small" style="margin-top:24px">함께 · 가족 귀가·일정 알림판${window.APP_MAKER?' · 만든 사람 '+esc(window.APP_MAKER):''}</p>`;
 }
 
 let showCode=false;
@@ -720,6 +761,27 @@ function guideHTML(){
  return `<h2 style="font-size:20px">동기화 켜는 방법 (처음 한 번)</h2><ol style="padding-left:20px;margin:0">${steps.map(x=>`<li style="margin-bottom:10px"><b>${x[0]}</b><br><span class="small">${x[1]}</span></li>`).join('')}</ol>
  <label class="l" for="rules-out">Firestore 규칙 (3번 단계에서 붙여 넣기)</label><textarea id="rules-out" readonly style="font:13px/1.5 ui-monospace,Consolas,monospace;min-height:190px">${esc(RULES)}</textarea>
  <button class="btn" style="margin-top:8px" data-act="rules-copy">규칙 복사하기</button>`;
+}
+
+const EMO=[
+ ['공부',['✏️','📖','📚','🧮','📝','🔢','🔤','🧠','🌏','🔬','🧪','💻','📐','🗒️','🎓','🗣️']],
+ ['예체능',['🎹','🎻','🎸','🥁','🎤','🎨','🖍️','✂️','🧩','♟️','⚽','🏀','🤸','🏊','🚴','🧘','🥋','🏃','⛸️','🩰']],
+ ['생활',['🪥','🛁','🚿','🧼','👕','🧦','🛏️','🌙','😴','⏰','🎒','👟','🧹','🧺','🗑️','🍽️','🥛','🍎','🥦','💧']],
+ ['집안일',['🪴','🐶','🐱','🐠','🧸','📦','🧽','🪣','🛒','🍳']],
+ ['마음',['💛','🤗','🙏','😊','👋','💬','📞','✉️','🌟','🏅','👍','🎉']]];
+const RT_SUG=[['🧮','주산 연습'],['🪥','양치하기'],['🎒','책가방 챙기기'],['✏️','숙제하기'],['📖','책 10분 읽기'],['📝','일기 쓰기'],['🔤','영어 단어 외우기'],['🔢','연산 문제 풀기'],['🎹','피아노 연습'],['🧸','장난감 정리'],['👕','옷 정리하기'],['🚿','씻기'],['🍽️','식탁 정리 돕기'],['🥛','우유 마시기'],['🐶','강아지 밥 주기'],['🪴','화분 물 주기'],['🌙','잠옷 입기'],['⏰','9시에 잠자리']];
+let rtD=null;
+function openRt(kid,rid){const r=rid&&(S.config.routines[kid]||[]).find(x=>x.id===rid);rtD={kid,r:rid||null,e:r?r.e:'🧮',t:r?r.t:'',cat:0};renderRt();$('#modal').classList.add('open')}
+function syncRt(){const i=$('#rt-text');if(i&&rtD)rtD.t=i.value;const c=$('#rt-own');if(c&&c.value.trim()&&rtD){rtD.e=c.value.trim();c.value=''}}
+function renderRt(){
+ const k=mById(rtD.kid)||{};
+ $('#sheet').innerHTML=`<h2>${rtD.r?'루틴 고치기':'루틴 추가'} · ${esc((k.emoji||'')+' '+(k.name||''))}</h2>
+ <div style="display:flex;gap:12px;align-items:center"><span style="font-size:52px;line-height:1;width:72px;height:72px;border-radius:20px;background:var(--brand2);display:grid;place-items:center;flex:none">${esc(rtD.e)}</span><div style="flex:1"><label class="l" for="rt-text" style="margin-top:0">할 일</label><input id="rt-text" maxlength="20" value="${esc(rtD.t)}" placeholder="예: 주산 연습"></div></div>
+ ${rtD.r?'':`<label class="l">추천 할 일</label><div class="chips">${RT_SUG.map(x=>`<button class="chip" data-act="rt-sug" data-e="${x[0]}" data-t="${x[1]}">${x[0]} ${x[1]}</button>`).join('')}</div>`}
+ <label class="l">그림 고르기</label><div class="chips" style="margin-bottom:10px">${EMO.map((c,i)=>`<button class="chip ${rtD.cat===i?'on':''}" data-act="emo-cat" data-i="${i}">${c[0]}</button>`).join('')}</div>
+ <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:6px">${EMO[rtD.cat][1].map(e=>`<button class="tile" style="min-height:52px;font-size:28px;padding:0;${e===rtD.e?'border-color:var(--brand);background:var(--brand2)':''}" data-act="emo-pick" data-e="${e}">${e}</button>`).join('')}</div>
+ <label class="l" for="rt-own">원하는 그림 직접 넣기 (선택)</label><input id="rt-own" maxlength="4" placeholder="이모지 하나를 붙여 넣거나 입력">
+ <div class="row2" style="margin-top:18px"><button class="btn" data-act="d-close">닫기</button><button class="btn pri" data-act="rt-save">저장하기</button></div>`;
 }
 const V={home:vHome,status:vStatus,plan:vPlan,month:vMonth,routine:vRoutine,talk:vTalk,shop:vShop,setup:vSetup};
 
@@ -753,8 +815,8 @@ function boardHTML(){
  else if(bview==='talk')body=bTalk();
  else if(bview==='month')body=`<div class="bpanel">${monthGrid()}<div style="margin-top:14px">${dayList(selDate)}</div></div>`;
  else body=members().map(brow).join('')||'<div class="bpanel empty">가족을 추가해 주세요</div>';
- return `<div class="bhead"><div><div class="sub" style="font-weight:700">가족 귀가·일정 알림판</div><h1>${esc(S.config.home)} 도착판</h1></div>${railHTML()}
- <div class="bclock"><div class="sub">${d.getMonth()+1}월 ${d.getDate()}일 ${DOW[d.getDay()]}요일 · <span class="js-ap">${ampm()}</span></div>${clockHTML()}<div class="bbtns"><button class="boardbtn" data-act="board-fs">⛶ 전체 화면</button><button class="boardbtn" data-act="board-close">✕ 닫기</button></div></div></div>
+ return `<div class="bhead"><div><div class="sub" style="font-weight:700">${esc(S.config.home)}</div><div class="ttl"><h1>함께</h1><span class="sync ${syncState==='on'?'on':''}" style="color:#fff"><i></i>${syncState==='on'?'동기화 중':syncTxt[syncState]}</span></div></div>${railHTML()}
+ <div class="bclock"><div class="sub">${d.getMonth()+1}월 ${d.getDate()}일 ${DOW[d.getDay()]}요일 · <span class="js-ap">${ampm()}</span></div>${clockHTML()}<div class="bbtns"><button class="boardbtn" data-act="board-fs">⛶ 전체 화면</button><button class="boardbtn" data-act="board-menu">☰ 전체 메뉴</button></div></div></div>
  <div class="bbody">${body}</div>
  <div class="bdock">${[['arr','🛬 도착판'],['talk','💌 말하기'],['routine','⭐ 루틴 '+rDone[0]+'/'+rDone[1]],['month','📅 달력']].map(b=>`<button class="dbtn ${bview===b[0]?'on':''}" data-act="bview" data-v="${b[0]}">${b[1]}</button>`).join('')}
  <div class="wid"><b>👪 가족 일정</b><span>${fam.length?fam.map(e=>(e.start?koS(e.start)+' ':'')+catOf(e.cat)[1]+' '+esc(e.title)).join(' · '):'남은 일정 없음'}</span></div>
@@ -798,7 +860,7 @@ function renderSheet(){
  <div class="sw" style="margin-top:8px"><span>📆 D-day로 세기</span><input type="checkbox" id="ev-dday" ${e.dday?'checked':''}></div>
  <div class="row2" style="margin-top:18px"><button class="btn" data-act="d-close">닫기</button><button class="btn pri" data-act="d-save">저장하기</button></div>`;
 }
-function closeSheet(){$('#modal').classList.remove('open');draft=null;if(dirty)render()}
+function closeSheet(){$('#modal').classList.remove('open');draft=null;sheetLock=false;if(dirty)render()}
 
 /* ---------- 동작 ---------- */
 function setStatus(id,o){S.status[id]=Object.assign({at:Date.now()},o);save('status')}
@@ -807,13 +869,33 @@ function go(v){view=v;try{history.replaceState(null,'','#'+v)}catch(e){location.
 function syncSt(){const g=id=>{const e=$('#'+id);return e?e.value:null};const a=g('st-eta'),b=g('st-note'),c=g('st-custom');if(a!==null)st.eta=a;if(b!==null)st.note=b;if(c!==null)st.custom=c}
 const A={
  tab:t=>go(t.dataset.v),
- 'gate-new':()=>{const i=$('#gate-code');if(i)i.value=newCode()},
+ 'start-new':()=>{wz=null;showWizard()},
+ 'start-join':()=>showJoin(joinHash||''),
+ 'start-demo':()=>{S=seed();SECS.forEach(k=>S[k]=norm(k,S[k]));prefs.localOnly=true;prefs.code='';prefs.me='m1';savePrefs();saveLocal();closeSheet();render();toast('예시 가족이에요. 설정에서 우리 가족을 만들 수 있어요')},
+ 'start-local':()=>{prefs.localOnly=true;savePrefs();closeSheet();if(!members().length){wz=null;showWizard();wz.local=true}},
+ 'wz-face':t=>{syncWz();const m=wz.members[+t.dataset.i];m.emoji=FACES[(FACES.indexOf(m.emoji)+1)%FACES.length];showWizard()},
+ 'wz-add':()=>{syncWz();wz.members.push({id:'m'+uid(),emoji:FACES[(wz.members.length+2)%FACES.length],name:'',kid:true});showWizard();const L=document.querySelectorAll('.wz-name');if(L.length)L[L.length-1].focus()},
+ 'wz-del':t=>{syncWz();wz.members.splice(+t.dataset.i,1);wz.me=0;showWizard()},
+ 'wz-back':()=>showStart(),
+ 'wz-go':()=>{syncWz();const mem=wz.members.filter(m=>m.name.trim()).map((m,i)=>({id:m.id,name:m.name.trim(),emoji:m.emoji,color:COLORS[i%COLORS.length],kid:m.kid}));
+  if(!mem.length)return toast('가족을 한 명 이상 넣어 주세요');
+  const meId=(wz.members[wz.me]&&wz.members[wz.me].name.trim())?wz.members[wz.me].id:mem[0].id;
+  S=emptyState(wz.home.trim()||'우리집',mem);prefs.me=meId;
+  const loc=!CFG||wz.local;if(!loc){prefs.code=newCode();prefs.mayCreate=true;prefs.localOnly=false}else prefs.localOnly=true;
+  savePrefs();saveLocal();sheetLock=false;closeSheet();render();
+  if(!loc){connect();toast('가족을 만들었어요! 설정에서 초대 링크를 보내 보세요')}else toast('준비됐어요')},
+ 'join-back':()=>showStart(),
+ 'join-go':()=>{const v=(($('#gate-code')||{}).value||'').trim();if(v.length<8)return toast('코드를 8글자 이상 넣어 주세요');
+  if(v!==prefs.code){S=emptyState('우리집',[]);saveLocal()}
+  prefs.code=v;prefs.mayCreate=false;prefs.localOnly=false;savePrefs();joinHash='';sheetLock=false;closeSheet();render();toast('가족 도착판에 연결하고 있어요');connect()},
+ 'invite-copy':async()=>{const link=location.origin+location.pathname+'#join='+encodeURIComponent(prefs.code);const msg='우리 가족 ‘함께’ 초대 링크예요. 눌러서 들어와 주세요!\n'+link;try{await navigator.clipboard.writeText(msg);toast('초대 링크를 복사했어요. 가족에게만 보내 주세요')}catch(e){const a=$('#inv-out');if(a){a.style.display='block';a.value=link;a.select()}toast('링크를 길게 눌러 복사해 주세요')}},
+ 'start-open':()=>showStart(),
  'gate-ok':()=>{const v=(($('#gate-code')||{}).value||'').trim();if(v.length<8)return toast('8글자 이상으로 넣어 주세요');prefs.code=v;savePrefs();closeSheet();toast('가족 도착판에 연결해요');connect()},
  'code-show':()=>{showCode=!showCode;render()},
  'code-change':()=>showGate(),
- 'code-forget':t=>{if(delArm!=='code'){delArm='code';t.textContent='정말 끊을까요?';t.classList.add('warn');return}delArm=null;prefs.code='';savePrefs();connect()},
+ 'code-forget':t=>{if(delArm!=='code'){delArm='code';t.textContent='정말 끊을까요?';t.classList.add('warn');return}delArm=null;prefs.code='';prefs.mayCreate=false;prefs.localOnly=false;savePrefs();S=emptyState('우리집',[]);saveLocal();unsubs.forEach(u=>{try{u()}catch(e){}});unsubs=[];fs=null;syncState='nocode';render();showStart()},
  'rules-copy':async()=>{try{await navigator.clipboard.writeText(RULES);toast('규칙을 복사했어요')}catch(e){$('#rules-out').select();toast('글자를 길게 눌러 복사해 주세요')}},
- 'bk-file':()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S)],{type:'application/json'}));a.download='우리집도착판-백업-'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)},
+ 'bk-file':()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S)],{type:'application/json'}));a.download='함께-백업-'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)},
 
  'go-status':t=>{st={who:t.dataset.id,i:null,eta:'',note:'',custom:''};go('status')},
  arrive:t=>{const m=mById(t.dataset.id);setStatus(m.id,{e:'🏠',t:'집에 있어요',home:true});toast(m.emoji+' '+m.name+', 어서 와요!');speak(m.name+', 어서 와요!')},
@@ -865,9 +947,18 @@ const A={
  'shop-clear':()=>{S.shop.list=S.shop.list.filter(y=>!y.done);save('shop')},
  'm-add':()=>{const cols=['#ffb74d','#9575cd','#4db6ac','#e57373','#64b5f6'];members().push({id:'m'+uid(),name:'새 가족',emoji:'🙂',color:cols[members().length%cols.length],kid:true});save('config')},
  'm-del':t=>{const id=t.dataset.id;if(delArm!==id){delArm=id;render();return}delArm=null;S.config.members=members().filter(m=>m.id!==id);delete S.config.routines[id];delete S.status[id];if(prefs.me===id){prefs.me=(members()[0]||{}).id||'';savePrefs()}save('config');save('status')},
- 'r-add':t=>{const id=t.dataset.id;(S.config.routines[id]=S.config.routines[id]||[]).push({id:'r'+uid(),e:'✅',t:'새 할 일'});save('config')},
+ 'r-add':t=>openRt(t.dataset.id,null),
+ 'rt-emo':t=>openRt(t.dataset.id,t.dataset.r),
+ 'emo-pick':t=>{syncRt();rtD.e=t.dataset.e;renderRt()},
+ 'emo-cat':t=>{syncRt();rtD.cat=+t.dataset.i;renderRt()},
+ 'rt-sug':t=>{rtD.e=t.dataset.e;rtD.t=t.dataset.t;renderRt()},
+ 'rt-save':()=>{syncRt();if(!rtD.t.trim())return toast('할 일 이름을 써 주세요');const L=(S.config.routines[rtD.kid]=S.config.routines[rtD.kid]||[]);
+  if(rtD.r){const r=L.find(x=>x.id===rtD.r);if(r){r.e=rtD.e;r.t=rtD.t.trim()}}else L.push({id:'r'+uid(),e:rtD.e,t:rtD.t.trim()});
+  closeSheet();save('config');toast(rtD.r?'고쳤어요':'루틴을 넣었어요')},
+ 'board-menu':()=>{menuOverride=true;idleT=Date.now();closeBoard()},
+ 'board-back':()=>{menuOverride=false;applyMode()},
  'r-del':t=>{const id=t.dataset.id;S.config.routines[id]=(S.config.routines[id]||[]).filter(r=>r.id!==t.dataset.r);save('config')},
- 'voice-test':()=>{const was=prefs.voice;prefs.voice=true;chime();speak('안녕하세요. '+S.config.home+' 도착판이에요.');prefs.voice=was},
+ 'voice-test':()=>{const was=prefs.voice;prefs.voice=true;chime();speak('안녕하세요. '+S.config.home+' 함께예요.');prefs.voice=was},
  'bk-copy':async()=>{try{await navigator.clipboard.writeText(JSON.stringify(S));toast('복사했어요. 메모장에 붙여 넣어 보관하세요')}catch(e){const a=$('#bk-out');a.select();toast('글자를 길게 눌러 복사해 주세요')}},
  'bk-restore':()=>{const v=($('#bk-in')||{}).value||'';let o;try{o=JSON.parse(v)}catch(e){return toast('백업 내용이 올바르지 않아요')}if(!o||!o.config||!Array.isArray(o.config.members))return toast('백업 내용이 올바르지 않아요');
   if(!restoreArm){restoreArm=true;render();const b=$('#bk-in');if(b)b.value=v;return}restoreArm=false;SECS.forEach(k=>{S[k]=norm(k,o[k]);if(fs&&canWrite)pending[k]=true});saveLocal();SECS.forEach(k=>{if(fs&&canWrite)flush(k)});render();toast('되살렸어요')},
@@ -887,13 +978,17 @@ function doSend(me,e,text,fromBoard){
  toast((me.kid?'엄마아빠에게':'')+' 보냈어요 '+e);
  if(fromBoard)speak(text==='집에 왔어요'?me.name+', 어서 와요!':'보냈어요');
 }
-let wake=null;
-async function openBoard(){boardOpen=true;bview='arr';bKid=null;try{history.replaceState(null,'','#board')}catch(e){}render();$('#board').classList.add('open');document.body.style.overflow='hidden';try{wake=await navigator.wakeLock.request('screen')}catch(e){wake=null}}
+let wake=null,menuOverride=false,idleT=Date.now();
+function boardWanted(){const m=prefs.screen||'auto';if(m==='board')return true;if(m==='phone')return false;return innerWidth>=1000&&innerWidth>innerHeight}
+function applyMode(){const want=boardWanted()&&!menuOverride;if(want&&!boardOpen)openBoard();else if(!want&&boardOpen)closeBoard();else render()}
+let rzT=null;window.addEventListener('resize',()=>{clearTimeout(rzT);rzT=setTimeout(()=>{if(!boardWanted())menuOverride=false;applyMode()},250)});
+async function openBoard(){boardOpen=true;bview='arr';bKid=null;render();$('#board').classList.add('open');document.body.style.overflow='hidden';try{wake=await navigator.wakeLock.request('screen')}catch(e){wake=null}}
 function closeBoard(){boardOpen=false;$('#board').classList.remove('open');document.body.style.overflow='';try{if(document.fullscreenElement)document.exitFullscreen()}catch(e){}try{wake&&wake.release()}catch(e){}wake=null;try{history.replaceState(null,'','#'+view)}catch(e){}render()}
 
 document.addEventListener('click',ev=>{
+ idleT=Date.now();
  if(!actx){try{actx=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}
- if(ev.target.id==='modal'){closeSheet();return}
+ if(ev.target.id==='modal'){if(!sheetLock)closeSheet();return}
  const t=ev.target.closest('[data-act]');if(!t||t.disabled)return;
  const a=t.dataset.act;
  if(delArm&&a!=='ev-del'&&a!=='m-del'&&a!=='code-forget')delArm=null;
@@ -911,12 +1006,13 @@ document.addEventListener('change',ev=>{
  else if(k==='r-e'||k==='r-t'){const r=(S.config.routines[t.dataset.id]||[]).find(x=>x.id===t.dataset.r);if(r){if(k==='r-e')r.e=t.value.trim()||r.e;else r.t=t.value.trim()||r.t;save('config')}}
  else if(k==='pref-me'){prefs.me=t.value;savePrefs();render()}
  else if(k==='pref-voice'){prefs.voice=t.checked;savePrefs()}
+ else if(k==='pref-screen'){prefs.screen=t.value;savePrefs();menuOverride=false;applyMode()}
  else if(k==='pref-night'){prefs.night=t.checked;savePrefs();night()}
 });
 document.addEventListener('keydown',ev=>{
  if(ev.key==='Enter'&&ev.target.id==='talk-in'){ev.preventDefault();A['talk-send']()}
  if(ev.key==='Enter'&&ev.target.id==='shop-in'){ev.preventDefault();A['shop-add']()}
- if(ev.key==='Escape'){if($('#modal').classList.contains('open'))closeSheet();else if(boardOpen)closeBoard()}
+ if(ev.key==='Escape'){if($('#modal').classList.contains('open')){if(!sheetLock)closeSheet()}}
 });
 
 /* ---------- 시계 · 알림 ---------- */
@@ -942,15 +1038,19 @@ setInterval(()=>{
  document.querySelectorAll('.js-h').forEach(e=>e.textContent=(d.getHours()%12)||12);
  document.querySelectorAll('.js-m').forEach(e=>e.textContent=pad(d.getMinutes()));
  document.querySelectorAll('.js-ap').forEach(e=>e.textContent=ampm());
- if(d.getMinutes()!==lastMin){lastMin=d.getMinutes();night();reminders();safeRender()}
+ if(d.getMinutes()!==lastMin){lastMin=d.getMinutes();if(menuOverride&&boardWanted()&&Date.now()-idleT>3*6e4&&!$('#modal').classList.contains('open')&&!busy()){menuOverride=false;applyMode()}night();reminders();safeRender()}
 },1000);
 
-const h0=(location.hash||'').slice(1);
+let h0=(location.hash||'').slice(1);
+if(h0.indexOf('join=')===0){joinHash=decodeURIComponent(h0.slice(5));h0='';try{history.replaceState(null,'',location.pathname)}catch(e){}}
 if(V[h0])view=h0;
 night();render();lastMin=new Date().getMinutes();
-if(h0==='board')openBoard();
+if(h0==='board'&&!prefs.screen){prefs.screen='board'}
+applyMode();
 window.addEventListener('hashchange',()=>{const h=location.hash.slice(1);if(V[h]&&h!==view){view=h;render()}});
-connect();
+if(joinHash&&joinHash!==prefs.code)showJoin(joinHash);
+else if(!CFG&&firstRun)showStart();
+if(!(joinHash&&joinHash!==prefs.code))connect();
 }
 </script>
 </body>
